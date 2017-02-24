@@ -74,10 +74,15 @@ public class SpigotUpdater {
             } catch (ConnectionFailedException e) {
                 e.printStackTrace();
             }
+            if(resource==null){
+                System.out.println("No Resource found for :" + arg);
+                break;
+            }
             File saveDir = new File(downloadLocation + "/" + resource.getResourceName() + "/");
             Long latest = 0L;
             File latestVersion = null;
             File[] files = saveDir.listFiles();
+            String lastVersionId = null;
             if (files != null) {
                 for (File file : files) {
                     if (latest < file.lastModified()) {
@@ -85,8 +90,19 @@ public class SpigotUpdater {
                         latestVersion = file;
                     }
                 }
-                System.out.println("Last Downloaded:" + latestVersion.getName());
+                if(latestVersion != null) {
+                    String[] parts = latestVersion.getName().split("-");
+                    lastVersionId = parts[1];
+                    System.out.println("Last Downloaded:" + parts[0]);
+                    System.out.println("Last Version:" + parts[1]);
+                }
             }
+            if (lastVersionId != null && lastVersionId.equals(resource.getLastVersion())) {
+                System.out.println("No Update Required");
+                System.out.println("----------------------------------" );
+                break;
+            }
+            System.out.println("***Update Required***");
             System.out.println("----------------------------------" );
             if (downloadJars) {
                 Date date = new Date(System.currentTimeMillis());
@@ -101,7 +117,9 @@ public class SpigotUpdater {
                     e.printStackTrace();
                 }
                 File out = resource.downloadResource(user, downloadFile);
-                System.out.print("File is : " + out.getTotalSpace() + " bytes. Path: " + out.getAbsolutePath());
+                Long bytes = out.length();
+                double kilobytes = (bytes / 1024);
+                System.out.print("File is : " + kilobytes + " kb. Path: " + out.getAbsolutePath());
             }
         }
 
