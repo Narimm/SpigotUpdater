@@ -18,6 +18,11 @@
             <artifactId>spigotsite</artifactId>
             <version>0.1.1-SNAPSHOT</version>
         </dependency>
+        <dependency>
+                <groupId>org.inventivetalent.spiget-update</groupId>
+                <artifactId>core</artifactId>
+                <version>1.4.0</version>
+        </dependency>
     </dependencies>
     <repositories>
         <repository>
@@ -26,6 +31,7 @@
             <url>http://repo.mvdw-software.com/content/groups/public/</url>
         </repository>
     </repositories>
+
 
 <build>
     <defaultGoal>clean install</defaultGoal>

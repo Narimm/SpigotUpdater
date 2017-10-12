@@ -23,62 +23,59 @@
  */
 
 package au.com.addstar;
+;
 
-import be.maximvdw.spigotsite.SpigotSiteCore;
-import be.maximvdw.spigotsite.api.exceptions.ConnectionFailedException;
-import be.maximvdw.spigotsite.api.resource.Resource;
-import be.maximvdw.spigotsite.api.resource.ResourceManager;
-import be.maximvdw.spigotsite.api.user.User;
-import be.maximvdw.spigotsite.api.user.UserManager;
-import be.maximvdw.spigotsite.api.user.exceptions.InvalidCredentialsException;
-import be.maximvdw.spigotsite.api.user.exceptions.TwoFactorAuthenticationException;
+import org.inventivetalent.update.spiget.ResourceInfo;
+import org.inventivetalent.update.spiget.UpdateCallback;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Properties;
+import java.util.logging.Logger;
 
 /**
  * Created for the AddstarMC Project.
  * Created by Narimm on 23/02/2017.
  */
 public class SpigotUpdater {
-    private static Properties config;
 
-    public static void main(String[] args) {
-        config = Configuration.loadConfig();
+    File downloadFile;
 
+    public void main(String[] args) {
+        Properties config = Configuration.loadConfig();
         String username = config.getProperty("username", "");
         String password = config.getProperty("password", "");
         String downloadLocation = config.getProperty("downloadLocation", "..");
-        Boolean downloadJars = Boolean.getBoolean(config.getProperty("downloadJars", "false"));
-        SpigotSiteCore core = new SpigotSiteCore();
-        ResourceManager manager = core.getResourceManager();
-        UserManager usermanager = core.getUserManager();
-        User user = null;
-        try {
-            user = usermanager.authenticate(username, password);
-        } catch (TwoFactorAuthenticationException | InvalidCredentialsException | ConnectionFailedException e) {
-            System.out.print("Could not authenticate with spigot with the provided credentials");
-            System.out.print("Will attempt resource download without user");
-        }
-        for (String arg : args) {
-            Resource resource = null;
-            try {
-                resource = manager.getResourceById(Integer.parseInt(arg), user);
-                System.out.println("Checked Resource ID: " + resource.getResourceId());
-                System.out.println("Name : " + resource.getResourceName());
-                System.out.println("Latest Version: " + resource.getLastVersion());
+        downloadFile = new File(downloadLocation);
+        Boolean downloadJars = Boolean.parseBoolean(config.getProperty("downloadJars", "false"));
+        Boolean externalDownloads = Boolean.parseBoolean(config.getProperty("externalJars", "false"));
+        SpigetUpdater updater = new SpigetUpdater(args[0], Logger.getAnonymousLogger(), Integer.parseInt(args[1]), config);
+            updater.checkForUpdate(new UpdateCallback() {
+                @Override
+                public void updateAvailable(String s, String s1, boolean hasDirectDownload) {
+                    ResourceInfo info = updater.getLatestResourceInfo();
+                    System.out.println("Updater found version Name: " + info.latestVersion.name);
+                    System.out.println("                        id: " + info.latestVersion.id);
+                    System.out.println("                        url: " + info.latestVersion.url);
+                    if (hasDirectDownload) {
+                        if (updater.downloadUpdate()) {
+                            // Update downloaded, will be loaded when the server restarts
+                        } else {
+                            // Update failed
+                            System.out.println("Update download failed, reason is " + updater.getFailReason());
+                        }
+                    }
+                }
 
-            } catch (ConnectionFailedException e) {
-                e.printStackTrace();
-            }
-            if(resource==null){
-                System.out.println("No Resource found for :" + arg);
-                break;
-            }
-            File saveDir = new File(downloadLocation + "/" + resource.getResourceName() + "/");
+                @Override
+                public void upToDate() {
+
+                }
+            });
+            String rPathName = resource.getResourceName().replaceAll("[^\\w\\s]", "").replace(" ", "_");
+            String savePath = downloadLocation + "/" + rPathName + "/";
+            File saveDir = new File(savePath);
             Long latest = 0L;
             File latestVersion = null;
             File[] files = saveDir.listFiles();
@@ -90,7 +87,7 @@ public class SpigotUpdater {
                         latestVersion = file;
                     }
                 }
-                if(latestVersion != null) {
+                if (latestVersion != null) {
                     String[] parts = latestVersion.getName().split("-");
                     lastVersionId = parts[1];
                     System.out.println("Last Downloaded:" + parts[0]);
@@ -99,29 +96,28 @@ public class SpigotUpdater {
             }
             if (lastVersionId != null && lastVersionId.equals(resource.getLastVersion())) {
                 System.out.println("No Update Required");
-                System.out.println("----------------------------------" );
+                System.out.println("----------------------------------");
                 break;
             }
             System.out.println("***Update Required***");
-            System.out.println("----------------------------------" );
+            System.out.println("----------------------------------");
             if (downloadJars) {
                 Date date = new Date(System.currentTimeMillis());
                 String dateString = new SimpleDateFormat("YYYYMMdd").format(date);
-                String filePath = downloadLocation + "/" + resource.getResourceName() + "/" + dateString + '-' + resource.getLastVersion();
-                System.out.print("Saving Resource: " + resource.getResourceName() + " Version: " + resource.getLastVersion() + " to " + filePath);
+                String filePath = savePath + dateString + '-' + resource.getLastVersion() + ".jar";
+                System.out.println("Saving Resource: " + resource.getResourceName() + " Version: " + resource.getLastVersion() + " to " + filePath);
                 File downloadFile = null;
-
-                try {
-                    downloadFile = File.createTempFile(filePath, ".jar");
-                } catch (IOException e) {
-                    e.printStackTrace();
+                downloadFile = new File(filePath);
+                if (downloadFile.exists()) {
+                    downloadFile.delete();
                 }
-                File out = resource.downloadResource(user, downloadFile);
-                Long bytes = out.length();
-                double kilobytes = (bytes / 1024);
-                System.out.print("File is : " + kilobytes + " kb. Path: " + out.getAbsolutePath());
+                    File out = resource.downloadResource(user, downloadFile);
+                    Long bytes = out.length();
+                    double kilobytes = (bytes / 1024);
+                    System.out.println("File is : " + kilobytes + " kb. Path: " + out.getAbsolutePath());
+                }
             }
-        }
 
+        }
     }
-}
+
