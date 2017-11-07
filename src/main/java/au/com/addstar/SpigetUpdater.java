@@ -24,17 +24,28 @@
 
 package au.com.addstar;
 
+import au.com.addstar.objects.ExtendedResourceInfo;
+import au.com.addstar.objects.Plugin;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.inventivetalent.update.spiget.ResourceVersion;
 import org.inventivetalent.update.spiget.SpigetUpdateAbstract;
+import org.inventivetalent.update.spiget.UpdateCallback;
+import org.inventivetalent.update.spiget.download.DownloadCallback;
+import org.inventivetalent.update.spiget.download.UpdateDownloader;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Calendar;
 import java.util.Properties;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Created for the Ark: Survival Evolved.
+ * Created for the Addstar
  * Created by Narimm on 12/10/2017.
  */
 public class SpigetUpdater extends SpigetUpdateAbstract{
@@ -42,12 +53,18 @@ public class SpigetUpdater extends SpigetUpdateAbstract{
     private DownloadFailReason failReason = DownloadFailReason.UNKNOWN;
     private File updateDir;
     private Properties config;
+    private ExtendedResourceInfo latestResourceInfo;
+    private boolean external;
+
+    public void setExternal(boolean external) {
+        this.external = external;
+    }
 
     public SpigetUpdater(String currentVersion, Logger log, Integer resourceID, Properties config) {
         super(resourceID,currentVersion, log);
         this.config = config;
+        external = false;
         updateDir = new File(config.getProperty("downloadLocation"));
-
         setUserAgent("AddstarResourceUpdater");
     }
 
@@ -59,9 +76,34 @@ public class SpigetUpdater extends SpigetUpdateAbstract{
 
     @Override
     protected void dispatch(Runnable runnable) {
+        runnable.run();
     }
 
-    public boolean downloadUpdate(){
+    @Override
+    public void checkForUpdate(UpdateCallback callback) {
+        dispatch(() -> {
+            try {
+                HttpURLConnection connection = (HttpURLConnection) new URL(String.format(RESOURCE_INFO, resourceId, System.currentTimeMillis())).openConnection();
+                connection.setRequestProperty("User-Agent", getUserAgent());
+                JsonObject jsonObject = new JsonParser().parse(new InputStreamReader(connection.getInputStream())).getAsJsonObject();
+                latestResourceInfo = new Gson().fromJson(jsonObject, ExtendedResourceInfo.class);
+                connection = (HttpURLConnection) new URL(String.format(RESOURCE_VERSION, resourceId, System.currentTimeMillis())).openConnection();
+                connection.setRequestProperty("User-Agent", getUserAgent());
+                jsonObject = new JsonParser().parse(new InputStreamReader(connection.getInputStream())).getAsJsonObject();
+                latestResourceInfo.latestVersion = new Gson().fromJson(jsonObject, ResourceVersion.class);
+                super.latestResourceInfo = latestResourceInfo;
+                if (isVersionNewer(currentVersion, latestResourceInfo.latestVersion.name)) {
+                    callback.updateAvailable(latestResourceInfo.latestVersion.name, "https://spigotmc.org/" + latestResourceInfo.file.url, !latestResourceInfo.external);
+                } else {
+                    callback.upToDate();
+                }
+            } catch (Exception e) {
+                log.log(Level.WARNING, "Failed to get resource info from spiget.org", e);
+            }
+        });
+    }
+
+    public boolean downloadUpdate(Plugin p){
         if (latestResourceInfo == null) {
             failReason = DownloadFailReason.NOT_CHECKED;
             return false;// Update not yet checked
@@ -70,11 +112,24 @@ public class SpigetUpdater extends SpigetUpdateAbstract{
             failReason = DownloadFailReason.NO_UPDATE;
             return false;// Version is no update
         }
-        if (latestResourceInfo.external) {
-            failReason = DownloadFailReason.NO_DOWNLOAD;
+        if (latestResourceInfo.external && !external) {
+            failReason = DownloadFailReason.EXTERNAL_DISALLOWED;
             return false;// No download available
         }
-
+        File updateDirectory = new File(updateDir, p.getName());
+        if(!updateDirectory.exists())updateDirectory.mkdir();
+        File updateFile = new File(updateDirectory,latestResourceInfo.latestVersion.name+".jar");
+        dispatch(UpdateDownloader.downloadAsync(latestResourceInfo, updateFile, userAgent, new DownloadCallback() {
+            @Override
+            public void finished() {
+                p.setVersion(latestResourceInfo.latestVersion.name);
+                p.setLastUpdated(Calendar.getInstance().getTime());
+            }
+            @Override
+            public void error(Exception e) {
+                e.printStackTrace();
+            }
+        }));
         return true;
     }
 
