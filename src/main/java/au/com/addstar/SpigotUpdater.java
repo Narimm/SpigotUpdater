@@ -25,19 +25,20 @@
 package au.com.addstar;
 ;
 
+import au.com.addstar.objects.InvalidDescriptionException;
 import au.com.addstar.objects.Plugin;
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
+import au.com.addstar.objects.PluginDescriptionFile;
 import org.apache.commons.lang3.StringUtils;
-import org.inventivetalent.update.spiget.ResourceInfo;
 import org.inventivetalent.update.spiget.UpdateCallback;
 
-import javax.swing.*;
 import java.io.*;
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.logging.Logger;
+import java.util.zip.ZipException;
 
 /**
  * Created for the AddstarMC Project.
@@ -50,22 +51,30 @@ public class SpigotUpdater {
     static List<Plugin> plugins = new ArrayList<>();
     static Boolean externalDownloads;
 
-    private static SimpleDateFormat format = new SimpleDateFormat("yyyy/MM/dd");
+    public static SpigotDirectDownloader getSpigotDownloader() {
+        return spigotDownloader;
+    }
+
+    private static SpigotDirectDownloader spigotDownloader;
+
+    public static SimpleDateFormat getFormat() {
+        return format;
+    }
+
+    private static SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
 
     public static void main(String[] args) {
-        Properties config = Configuration.loadConfig();
-        datFile = new File("Spigotplugins.dat");
+        Configuration config = new Configuration();
         final boolean check = (args.length == 1 && args[0].equals("check"));
-        String username = config.getProperty("username", "");
-        String password = config.getProperty("password", "");
-        String downloadLocation = config.getProperty("downloadLocation", ".");
-        downloadDir = new File(downloadLocation);
+        if(check)System.out.println(" ONLY CHECKING NO DOWNLOADS WILL BE PERFORMED.");
+        downloadDir = config.downloadDir;
         if(!downloadDir.exists()){
             downloadDir.mkdir();
         }
-        Boolean downloadJars = Boolean.parseBoolean(config.getProperty("downloadJars", "false"));
-        externalDownloads = Boolean.parseBoolean(config.getProperty("externalJars", "false"));
+        datFile = new File(downloadDir,"plugins.dat");
+        externalDownloads = config.externalDownloads;
         loadPlugins();
+        spigotDownloader = new SpigotDirectDownloader(config);
         int i = 0;
         doOutHeader();
         for(final Plugin p: plugins) {
@@ -74,11 +83,11 @@ public class SpigotUpdater {
             updater.checkForUpdate(getUpdateCallBack(updater,p,check));
             i++;
         }
-        try {
+        /*try {
             savePlugins();
         }catch (IOException e){
             e.printStackTrace();
-        }
+        }*/
         System.out.println("Processed:  " + i + " plugins");
     }
         private static void loadPlugins() {
@@ -88,127 +97,141 @@ public class SpigotUpdater {
                 String l;
                     while ((l = b.readLine()) != null) {
                         if (!l.startsWith("#")) {
-                            String[] lineArray = StringUtils.split(l,"|");
-                            String pluginName = lineArray[0];
-                            String resourceID = lineArray[1];
-                            String version = lineArray[2];
-                            String lastUpdated = null;
-                            if (lineArray.length == 4) {
-                                lastUpdated = lineArray[3];
+                            String[] lineArray = StringUtils.split(l,",");
+                            if(lineArray.length!=0) {
+                                String pluginName = lineArray[0];
+                                String type = lineArray[1];
+                                String source = lineArray[2];
+                                if (source.equals("SPIGOT")) {
+                                    String resourceID = lineArray[3];
+                                    Plugin plugin = new Plugin();
+                                    plugin.setName(pluginName);
+                                    plugin.setResourceID(Integer.parseInt(resourceID));
+                                    plugin = checkLast(plugin);
+                                    if(plugin.getVersion() == null )plugin.setVersion("");
+                                    if(plugin.getLastUpdated()== null)plugin.setLastUpdated(new Date(0L));
+                                    plugins.add(plugin);
+                                }
                             }
-                            Plugin plugin = new Plugin();
-                            plugin.setName(pluginName);
-                            plugin.setVersion(version);
-                            plugin.setResourceID(Integer.parseInt(resourceID));
-                            Date date;
-                            try {
-                                date = format.parse(lastUpdated);
-                            } catch (ParseException e) {
-                                System.out.print(e.getMessage());
-                                date = null;
-                            }
-                            plugin.setLastUpdated(date);
-                            plugins.add(plugin);
                         }
                     }
                 }catch (IOException e){
                     e.printStackTrace();
                 }
             }else{
-                createNewPluginDat();
+                //createNewPluginDat();
             }
         }
-    private static void createNewPluginDat() {
-        try {
-            datFile.createNewFile();
-            Writer writer = new FileWriter(datFile);
-            String comment = "# Add new plugins using the following formate.  Comments use #";
-            writer.write(comment);
-            String layout = "# pluginName|resourceID|version|lastUpdated(yyyy/MM/dd)";
-            writer.write(layout);
-            writer.close();
-        }catch (IOException e){
-            e.printStackTrace();
+
+    /**
+     *
+     * @param plugin
+     * @return updated Plugin ref.
+     */
+    public static Plugin checkLast(Plugin plugin) {
+        File pluginDir = new File(downloadDir, plugin.getName());
+        File latest = null;
+        if (pluginDir.exists()) {
+            File[] files = pluginDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (latest != null) {
+                        if (file.lastModified() > latest.lastModified()) {
+                            latest = file;
+                        }
+                    } else {
+                        latest = file;
+                    }
+                }
+                if (latest == null) return plugin;
+                plugin = openJar(plugin, latest);
+            }
         }
+        return plugin;
     }
 
+    /**
+     *
+     * @param name
+     * @param check
+     * @return a new Plugin Instance
+     */
 
-    private static void savePlugins() throws IOException{
-        if(datFile.exists()) {
-            datFile.delete();
+    protected static Plugin checkLast(String name, File check){
+        File latest = check;
+        Plugin plugin = new Plugin();
+        plugin.setName(name);
+        return openJar(plugin,latest);
+    }
+
+    /**
+     *
+     * @param plugin
+     * @param file
+     * @return the same Plugin ref that was a param updated.
+     */
+    private static Plugin openJar(Plugin plugin, File file){
+
+        try {
+            JarFile jar = new JarFile(file);
+            JarEntry je = jar.getJarEntry("plugin.yml");
+            InputStream stream = jar.getInputStream(je);
+            PluginDescriptionFile pdf = new PluginDescriptionFile(stream);
+            stream.close();
+            plugin.setVersion(pdf.getVersion());
+            plugin.setLastUpdated(new Date(file.lastModified()));
+        } catch (ZipException e){
+            //supress
+        } catch (IOException | InvalidDescriptionException e) {
+            System.out.println(e.getLocalizedMessage());
         }
-        createNewPluginDat();
-        FileWriter fw = new FileWriter(datFile);
-        BufferedWriter writer = new BufferedWriter(fw);
-        for(Plugin p: plugins){
-            StringBuilder sb = new StringBuilder();
-            sb.append(p.getName()).append("|");
-            sb.append(p.getResourceID()).append("|");
-            sb.append(p.getVersion()).append("|");
-            sb.append(format.format(p.getLastUpdated()));
-            writer.write(sb.toString());
-            writer.newLine();
-        }
-        writer.close();
+        return plugin;
     }
 
     private static UpdateCallback getUpdateCallBack(SpigetUpdater updater, Plugin p, boolean check){
         return new UpdateCallback() {
             @Override
-            public void updateAvailable(String s, String s1, boolean hasDirectDownload) {
-                ResourceInfo info = updater.getLatestResourceInfo();
-                //System.out.println("Updater found version Name: " + info.latestVersion.name);
-                //System.out.println("                        id: " + info.latestVersion.id);
-                //System.out.println("                        url: " + info.latestVersion.url);
+            public void updateAvailable(String latestVersion, String url, boolean hasDirectDownload) {
+                String name = StringUtils.rightPad(p.getName(),25, " ");
+                List<String> out = new ArrayList<>();
+                out.add(name);
+                out.add(StringUtils.rightPad(p.getResourceID().toString(),13));
+                out.add(StringUtils.rightPad(p.getVersion(),10));
+                out.add(StringUtils.rightPad(latestVersion,10));
                 if ((hasDirectDownload || externalDownloads) && !check){
                     String result;
                     if (updater.downloadUpdate(p)) {
                         result = "DONE";
-                        // Update downloaded, will be loaded when the server restarts
                     } else {
                         result = "FAIL";
-                        System.out.println("Update download failed, reason is " + updater.getFailReason());
                     }
-                    String name = StringUtils.rightPad(p.getName(),30, " ");
-                    List<String> out = new ArrayList<>();
-                    out.add(name);
-                    out.add(StringUtils.rightPad(p.getResourceID().toString(),13));
-                    out.add(StringUtils.rightPad(p.getVersion(),10));
-                    out.add(StringUtils.rightPad(info.latestVersion.name,10));
-                    out.add(StringUtils.rightPad(result,5));
-                    out.add(format.format(p.getLastUpdated()));
-                    StringBuilder sb = new StringBuilder();
-                    String[] message = new String[out.size()];
-                    out.toArray(message);
-                    sb.append(StringUtils.join(message," | "));
-                    System.out.println(sb.toString());
+                    out.add(StringUtils.rightPad(result,10));
+                    out.add(StringUtils.rightPad(format.format(p.getLastUpdated()),15));
+                    if(result.equals("FAIL"))out.add(" REASON: " + updater.getFailReason() + " - URL: " + url);
                 }else{
-                    String name = StringUtils.rightPad(p.getName(),30, " ");
-                    List<String> out = new ArrayList<>();
-                    out.add(name);
-                    out.add(StringUtils.rightPad(p.getResourceID().toString(),13));
-                    out.add(StringUtils.rightPad(p.getVersion(),10));
-                    out.add(StringUtils.rightPad(info.latestVersion.name,10));
-                    out.add(StringUtils.rightPad("YES",5));
-                    out.add(format.format(p.getLastUpdated()));
-                    StringBuilder sb = new StringBuilder();
-                    String[] message = new String[out.size()];
-                    out.toArray(message);
-                    sb.append(StringUtils.join(message," | "));
-                    System.out.println(sb.toString());
+                    out.add(StringUtils.rightPad("NO",10));
+                    out.add(StringUtils.rightPad(format.format(p.getLastUpdated()),15));
+                    if(!check) {
+                        out.add(" REASON: EXTERNAL -  URL: " + url);
+                    }
                 }
+                StringBuilder sb = new StringBuilder();
+                String[] message = new String[out.size()];
+                out.toArray(message);
+                sb.append(StringUtils.join(message," | "));
+                System.out.println(sb.toString());
             }
 
             @Override
             public void upToDate() {
-                String name = StringUtils.rightPad(p.getName(),30, " ");
+                String name = StringUtils.rightPad(p.getName(),25, " ");
                 List<String> out = new ArrayList<>();
                 out.add(name);
                 out.add(StringUtils.rightPad(p.getResourceID().toString(),13));
                 out.add(StringUtils.rightPad(p.getVersion(),10));
                 out.add(StringUtils.rightPad(p.getVersion(),10));
-                out.add(StringUtils.rightPad("NO",5));
-                out.add(format.format(p.getLastUpdated()));
+                out.add(StringUtils.rightPad("YES",10));
+                out.add(StringUtils.rightPad(format.format(p.getLastUpdated()),15));
                 StringBuilder sb = new StringBuilder();
                 String[] message = new String[out.size()];
                 out.toArray(message);
@@ -219,13 +242,14 @@ public class SpigotUpdater {
     }
     private static void doOutHeader(){
         List<String> out = new ArrayList<>();
-        String name = StringUtils.rightPad("Plugin Name",30, " ");
+        String name = StringUtils.rightPad("Plugin Name",25, " ");
         out.add(name);
         out.add(" Resource ID ");
         out.add(StringUtils.rightPad("Version",10));
         out.add(StringUtils.rightPad("Latest",10));
-        out.add(StringUtils.rightPad("Update",5));
+        out.add(StringUtils.rightPad("Up to Date",10));
         out.add("Date Updated");
+        out.add("Extra Notes");
         StringBuilder sb = new StringBuilder();
         String[] message = new String[out.size()];
         out.toArray(message);

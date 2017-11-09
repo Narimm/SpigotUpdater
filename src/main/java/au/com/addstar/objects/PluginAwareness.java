@@ -24,58 +24,28 @@
 
 package au.com.addstar.objects;
 
-import java.util.Date;
+import java.util.Set;
+
 
 /**
- * Created for the Ark: Survival Evolved.
- * Created by Narimm on 7/11/2017.
+ * Represents a concept that a plugin is aware of.
+ * <p>
+ * The internal representation may be singleton, or be a parameterized
+ * instance, but must be immutable.
  */
-public class Plugin {
-    private String Name;
-
-    public Integer getResourceID() {
-        return resourceID;
-    }
-
-    public void setResourceID(Integer resourceID) {
-        this.resourceID = resourceID;
-    }
-
-    private Integer resourceID;
-    private String version;
-
-    public String getLatestVersion() {
-        return latestVersion;
-    }
-
-    public void setLatestVersion(String latestVersion) {
-        this.latestVersion = latestVersion;
-    }
-
-    private String latestVersion;
-    private Date lastUpdated;
-
-    public String getName() {
-        return Name;
-    }
-
-    public void setName(String name) {
-        Name = name;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public void setVersion(String version) {
-        this.version = version;
-    }
-
-    public Date getLastUpdated() {
-        return lastUpdated;
-    }
-
-    public void setLastUpdated(Date lastUpdated) {
-        this.lastUpdated = lastUpdated;
+public interface PluginAwareness {
+    /**
+     * Each entry here represents a particular plugin's awareness. These can
+     * be checked by using {@link PluginDescriptionFile#getAwareness()}.{@link
+     * Set#contains(Object) contains(flag)}.
+     */
+    public enum Flags implements PluginAwareness {
+        /**
+         * This specifies that all (text) resources stored in a plugin's jar
+         * use UTF-8 encoding.
+         *
+         */
+        UTF8,
+        ;
     }
 }

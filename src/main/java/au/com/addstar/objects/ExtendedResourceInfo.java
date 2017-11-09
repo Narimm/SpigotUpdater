@@ -33,5 +33,6 @@ import org.inventivetalent.update.spiget.ResourceInfo;
 public class ExtendedResourceInfo extends ResourceInfo{
 
     public String name;
+    public boolean premium;
 
 }

@@ -22,60 +22,34 @@
  * SOFTWARE.
  */
 
-package au.com.addstar.objects;
+package au.com.addstar;
 
-import java.util.Date;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.nio.charset.Charset;
+import java.net.URL;
+
 
 /**
- * Created for the Ark: Survival Evolved.
- * Created by Narimm on 7/11/2017.
+ * Created for the AddstarMC
+ * Created by Narimm on 8/11/2017.
  */
-public class Plugin {
-    private String Name;
-
-    public Integer getResourceID() {
-        return resourceID;
-    }
-
-    public void setResourceID(Integer resourceID) {
-        this.resourceID = resourceID;
-    }
-
-    private Integer resourceID;
-    private String version;
-
-    public String getLatestVersion() {
-        return latestVersion;
-    }
-
-    public void setLatestVersion(String latestVersion) {
-        this.latestVersion = latestVersion;
-    }
-
-    private String latestVersion;
-    private Date lastUpdated;
-
-    public String getName() {
-        return Name;
-    }
-
-    public void setName(String name) {
-        Name = name;
-    }
-
-    public String getVersion() {
-        return version;
-    }
-
-    public void setVersion(String version) {
-        this.version = version;
-    }
-
-    public Date getLastUpdated() {
-        return lastUpdated;
-    }
-
-    public void setLastUpdated(Date lastUpdated) {
-        this.lastUpdated = lastUpdated;
+public class Utilities {
+    public static String readURL(String url) {
+        try (InputStream is = new URL(url).openStream()) {
+            BufferedReader rd = new BufferedReader(new InputStreamReader(is, Charset.forName("UTF-8")));
+            StringBuilder sb = new StringBuilder();
+            int cp;
+            while ((cp = rd.read()) != -1) {
+                sb.append((char) cp);
+            }
+            return sb.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

@@ -32,10 +32,16 @@ import java.util.Properties;
  * Created by benjamincharlton on 7/12/2016.
  */
 class Configuration {
-    private static Properties defaultProps;
-    private static final File config = new File("config.properties");
+    String username = "";
+    String password = "";
+    Boolean externalDownloads = false;
+    File downloadDir = null;
+    boolean downloadJars = false;
 
-    static Properties loadConfig(){
+    private  Properties defaultProps;
+    private  final File config = new File("config.properties");
+
+    public Configuration() {
         InputStream input = Configuration.class.getResourceAsStream("/config.properties");
         defaultProps = new Properties();
         try{
@@ -58,9 +64,11 @@ class Configuration {
         } catch(IOException e){
             e.printStackTrace();
         }
-        return prop;
+        setVariables(prop);
     }
-    private static void createConfig(){
+
+
+    private void createConfig(){
         try {
             if (config.createNewFile()) {
                 OutputStream out = new FileOutputStream(config);
@@ -72,7 +80,7 @@ class Configuration {
         }
     }
 
-    public static Properties reloadConfig(){
+    public void reloadConfig(){
         Properties prop = new Properties();
         try {
             File configFile = new File("config.properties");
@@ -87,11 +95,21 @@ class Configuration {
                 prop = defaultProps;
                 out.close();
             }
+            setVariables(prop);
         } catch(IOException e){
             e.printStackTrace();
         }
-        return prop;
     }
+
+    private void setVariables(Properties prop){
+        username = prop.getProperty("username", "");
+        password = prop.getProperty("password", "");
+        downloadDir = new File(prop.getProperty("downloadLocation", "."));
+        externalDownloads = Boolean.parseBoolean(prop.getProperty("externalJars", "false"));
+        downloadJars = Boolean.parseBoolean(prop.getProperty("downloadJars", "false"));
+
+    }
+
 
 
 
