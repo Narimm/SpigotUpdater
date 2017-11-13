@@ -24,28 +24,29 @@
 
 package au.com.addstar.objects;
 
-import java.util.Set;
-
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
 /**
- * Represents a concept that a plugin is aware of.
- * <p>
- * The internal representation may be singleton, or be a parameterized
- * instance, but must be immutable.
+ * Created for use for the Add5tar MC Minecraft server
+ * Created by benjamincharlton on 13/11/2017.
  */
-public interface PluginAwareness {
-    /**
-     * Each entry here represents a particular plugin's awareness. These can
-     * be checked by using {@link PluginDescriptionFile#getAwareness()}.{@link
-     * Set#contains(Object) contains(flag)}.
-     */
-    enum Flags implements PluginAwareness {
-        /**
-         * This specifies that all (text) resources stored in a plugin's jar
-         * use UTF-8 encoding.
-         *
-         */
-        UTF8,
-        ;
+public abstract class VersionComparator extends org.inventivetalent.update.spiget.comparator.VersionComparator{
+
+    public static final VersionComparator MAVEN_VER = new VersionComparator() {
+        @Override
+        public boolean isNewer(String var1, String var2) {
+            DefaultArtifactVersion current = new DefaultArtifactVersion(var1);
+            DefaultArtifactVersion check = new DefaultArtifactVersion(var2);
+            if(current.getMajorVersion()+current.getMinorVersion()+current.getIncrementalVersion()==0){
+                //not maven compat fallback
+                return !var1.equals(var2);
+            }
+            int result = check.compareTo(current);
+            return result > 0;
+        }
+    };
+
+    public boolean equals(String var1,String var2){
+            return var1.equals(var2);
     }
 }

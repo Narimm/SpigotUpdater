@@ -31,7 +31,7 @@ package au.com.addstar.objects;
 /**
  * Thrown when attempting to load an invalid PluginDescriptionFile
  */
-public class InvalidDescriptionException extends Exception {
+class InvalidDescriptionException extends Exception {
     private static final long serialVersionUID = 5721389122281775896L;
 
     /**

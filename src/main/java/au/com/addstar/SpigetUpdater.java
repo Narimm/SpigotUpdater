@@ -26,6 +26,7 @@ package au.com.addstar;
 
 import au.com.addstar.objects.ExtendedResourceInfo;
 import au.com.addstar.objects.Plugin;
+import au.com.addstar.objects.VersionComparator;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -43,7 +44,6 @@ import java.util.logging.Logger;
 
 import static au.com.addstar.SpigotUpdater.getFormat;
 import static au.com.addstar.SpigotUpdater.getSpigotDownloader;
-import static au.com.addstar.SpigotUpdater.plugins;
 
 /**
  * Created for the Addstar
@@ -52,8 +52,7 @@ import static au.com.addstar.SpigotUpdater.plugins;
 public class SpigetUpdater extends SpigetUpdateAbstract{
 
     private DownloadFailReason failReason = DownloadFailReason.UNKNOWN;
-    private File updateDir;
-    private Configuration config;
+    private final File updateDir;
     private ExtendedResourceInfo latestResourceInfo;
     private String latestVer;
     private boolean external;
@@ -65,10 +64,11 @@ public class SpigetUpdater extends SpigetUpdateAbstract{
 
     public SpigetUpdater(String currentVersion, Logger log, Integer resourceID, Configuration c) {
         super(resourceID,currentVersion, log);
-        this.config = c;
+        Configuration config = c;
         external = false;
         updateDir = config.downloadDir;
         setUserAgent("AddstarResourceUpdater");
+        setVersionComparator(VersionComparator.MAVEN_VER);
     }
 
     @Override
@@ -152,7 +152,7 @@ public class SpigetUpdater extends SpigetUpdateAbstract{
         if(latestResourceInfo.premium){
             if(getSpigotDownloader().downloadUpdate(latestResourceInfo,updateFile)){
                 p.setVersion(latestVer);
-                SpigotUpdater.addSpigotVer(p,latestVer);
+                p.addSpigotVer(latestVer);
                 p.setLastUpdated(Calendar.getInstance().getTime());
             }else{
                 failReason = DownloadFailReason.PREMIUM;
@@ -162,7 +162,7 @@ public class SpigetUpdater extends SpigetUpdateAbstract{
         }else if(latestResourceInfo.external) {
             if(getSpigotDownloader().downloadUpdate(latestResourceInfo,updateFile)){
                 p.setVersion(latestVer);
-                SpigotUpdater.addSpigotVer(p,latestVer);
+                p.addSpigotVer(latestVer);
                 p.setLastUpdated(Calendar.getInstance().getTime());
             }else{
                 failReason = DownloadFailReason.EXTERNAL_DISALLOWED;
@@ -171,7 +171,8 @@ public class SpigetUpdater extends SpigetUpdateAbstract{
         }else{
             try {
                 UpdateDownloader.download(latestResourceInfo, updateFile, userAgent);
-                SpigotUpdater.addSpigotVer(p,latestVer);
+                p.setSpigotVersion(latestVer);
+                p.addSpigotVer(latestVer);
                 Plugin updated = SpigotUpdater.checkDownloadedVer(updateFile);
                 if(!updated.getVersion().equals(latestVer)){
                     if(updated.getVersion().equals(p.getVersion())){
@@ -208,7 +209,7 @@ public class SpigetUpdater extends SpigetUpdateAbstract{
         EXTERNAL_DISALLOWED,
         PREMIUM,
         VERSION_MISMATCH,
-        UNKNOWN;
+        UNKNOWN
     }
 
 }

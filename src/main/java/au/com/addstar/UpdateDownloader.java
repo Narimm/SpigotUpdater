@@ -62,8 +62,8 @@ import java.nio.channels.ReadableByteChannel;
 import org.inventivetalent.update.spiget.ResourceInfo;
 import org.inventivetalent.update.spiget.download.DownloadCallback;
 
-public class UpdateDownloader {
-    public static final String RESOURCE_DOWNLOAD = "http://api.spiget.org/v2/resources/%s/download";
+class UpdateDownloader {
+    private static final String RESOURCE_DOWNLOAD = "http://api.spiget.org/v2/resources/%s/download";
 
     public UpdateDownloader() {
     }
@@ -82,8 +82,8 @@ public class UpdateDownloader {
         };
     }
 
-    public static void download(ResourceInfo info, File file) {
-        download(info, file);
+    private static void download(ResourceInfo info, File file) {
+        download(info, file, "SPIGOTUPDATER-JAVA");
     }
 
     public static void download(ResourceInfo info, File file, String userAgent) {

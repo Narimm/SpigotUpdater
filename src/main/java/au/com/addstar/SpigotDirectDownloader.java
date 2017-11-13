@@ -35,7 +35,6 @@ import be.maximvdw.spigotsite.user.SpigotUser;
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.WebClient;
-import com.gargoylesoftware.htmlunit.html.HtmlPage;
 import com.gargoylesoftware.htmlunit.util.Cookie;
 import org.inventivetalent.update.spiget.ResourceInfo;
 
@@ -50,9 +49,9 @@ import java.util.Map;
  * Created by Narimm on 8/11/2017.
  */
 public class SpigotDirectDownloader {
-    private WebClient webClient;
+    private final WebClient webClient;
     private User spigotUser;
-    private SpigotSiteAPI api;
+    private final SpigotSiteAPI api;
 
     public SpigotDirectDownloader(Configuration config) {
         api = new SpigotSiteCore();

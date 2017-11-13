@@ -36,9 +36,9 @@ class Configuration {
     String password = "";
     Boolean externalDownloads = false;
     File downloadDir = null;
-    boolean downloadJars = false;
+    private boolean downloadJars = false;
 
-    private  Properties defaultProps;
+    private final Properties defaultProps;
     private  final File config = new File("config.properties");
 
     public Configuration() {

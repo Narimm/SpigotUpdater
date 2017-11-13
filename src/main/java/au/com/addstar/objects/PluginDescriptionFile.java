@@ -161,7 +161,7 @@ import com.google.common.collect.ImmutableSet;
  *      inferno.burningdeaths: true
  *</pre></blockquote>
  */
-public final class PluginDescriptionFile {
+final class PluginDescriptionFile {
     private static final ThreadLocal<Yaml> YAML = new ThreadLocal<Yaml>() {
         @Override
         protected Yaml initialValue() {
@@ -187,18 +187,18 @@ public final class PluginDescriptionFile {
             });
         }
     };
-    String rawName = null;
+    private String rawName = null;
     private String name = null;
-    private String main = null;
-    private String classLoaderOf = null;
+    private final String main = null;
+    private final String classLoaderOf = null;
     private String version = null;
-    private Map<String, Map<String, Object>> commands = null;
+    private final Map<String, Map<String, Object>> commands = null;
     private String description = null;
-    private List<String> authors = null;
+    private final List<String> authors = null;
     private String website = null;
     private String prefix = null;
     private boolean database = false;
-    private Set<PluginAwareness> awareness = ImmutableSet.of();
+    private final Set<PluginAwareness> awareness = ImmutableSet.of();
 
     public PluginDescriptionFile(final InputStream stream) throws InvalidDescriptionException{
         loadMap(asMap(YAML.get().load(stream)));
