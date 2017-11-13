@@ -94,7 +94,7 @@ public class SpigotDirectDownloader {
             bout.close();
             in.close();
             fos.close();
-            Plugin plugin = SpigotUpdater.checkLast("",file);
+            Plugin plugin = SpigotUpdater.checkDownloadedVer(file);
             if(plugin == null || plugin.getVersion() == null){
                 file.delete();
                 return false;

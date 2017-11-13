@@ -43,6 +43,7 @@ import java.util.logging.Logger;
 
 import static au.com.addstar.SpigotUpdater.getFormat;
 import static au.com.addstar.SpigotUpdater.getSpigotDownloader;
+import static au.com.addstar.SpigotUpdater.plugins;
 
 /**
  * Created for the Addstar
@@ -151,6 +152,7 @@ public class SpigetUpdater extends SpigetUpdateAbstract{
         if(latestResourceInfo.premium){
             if(getSpigotDownloader().downloadUpdate(latestResourceInfo,updateFile)){
                 p.setVersion(latestVer);
+                SpigotUpdater.addSpigotVer(p,latestVer);
                 p.setLastUpdated(Calendar.getInstance().getTime());
             }else{
                 failReason = DownloadFailReason.PREMIUM;
@@ -160,6 +162,7 @@ public class SpigetUpdater extends SpigetUpdateAbstract{
         }else if(latestResourceInfo.external) {
             if(getSpigotDownloader().downloadUpdate(latestResourceInfo,updateFile)){
                 p.setVersion(latestVer);
+                SpigotUpdater.addSpigotVer(p,latestVer);
                 p.setLastUpdated(Calendar.getInstance().getTime());
             }else{
                 failReason = DownloadFailReason.EXTERNAL_DISALLOWED;
@@ -168,7 +171,8 @@ public class SpigetUpdater extends SpigetUpdateAbstract{
         }else{
             try {
                 UpdateDownloader.download(latestResourceInfo, updateFile, userAgent);
-                Plugin updated = SpigotUpdater.checkLast(p.getName(),updateFile);
+                SpigotUpdater.addSpigotVer(p,latestVer);
+                Plugin updated = SpigotUpdater.checkDownloadedVer(updateFile);
                 if(!updated.getVersion().equals(latestVer)){
                     if(updated.getVersion().equals(p.getVersion())){
                         updateFile.delete();

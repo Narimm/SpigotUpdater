@@ -24,6 +24,7 @@
 
 package au.com.addstar.objects;
 
+import java.io.File;
 import java.util.Date;
 
 /**
@@ -32,6 +33,16 @@ import java.util.Date;
  */
 public class Plugin {
     private String Name;
+
+    public File getLatestFile() {
+        return latestFile;
+    }
+
+    public void setLatestFile(File latestFile) {
+        this.latestFile = latestFile;
+    }
+
+    private File latestFile;
 
     public Integer getResourceID() {
         return resourceID;

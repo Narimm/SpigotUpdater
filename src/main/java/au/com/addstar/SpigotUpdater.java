@@ -28,15 +28,16 @@ package au.com.addstar;
 import au.com.addstar.objects.InvalidDescriptionException;
 import au.com.addstar.objects.Plugin;
 import au.com.addstar.objects.PluginDescriptionFile;
+import com.sun.prism.shader.DrawPgram_LinearGradient_PAD_AlphaTest_Loader;
 import org.apache.commons.lang3.StringUtils;
 import org.inventivetalent.update.spiget.UpdateCallback;
 
 import java.io.*;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.jar.JarOutputStream;
 import java.util.logging.Logger;
 import java.util.zip.ZipException;
 
@@ -107,7 +108,8 @@ public class SpigotUpdater {
                                     Plugin plugin = new Plugin();
                                     plugin.setName(pluginName);
                                     plugin.setResourceID(Integer.parseInt(resourceID));
-                                    plugin = checkLast(plugin);
+                                    setLatestFile(plugin);
+                                    setLatestVer(plugin);
                                     if(plugin.getVersion() == null )plugin.setVersion("");
                                     if(plugin.getLastUpdated()== null)plugin.setLastUpdated(new Date(0L));
                                     plugins.add(plugin);
@@ -128,7 +130,7 @@ public class SpigotUpdater {
      * @param plugin
      * @return updated Plugin ref.
      */
-    public static Plugin checkLast(Plugin plugin) {
+    public static void setLatestFile(Plugin plugin) {
         File pluginDir = new File(downloadDir, plugin.getName());
         File latest = null;
         if (pluginDir.exists()) {
@@ -143,42 +145,61 @@ public class SpigotUpdater {
                         latest = file;
                     }
                 }
-                if (latest == null) return plugin;
-                plugin = openJar(plugin, latest);
+                if (latest != null)plugin.setLatestFile(latest);
             }
         }
+    }
+    static Plugin checkDownloadedVer(File file){
+        Plugin plugin = new Plugin();
+        plugin.setLatestFile(file);
+        setLatestVer(plugin);
         return plugin;
     }
-
     /**
      *
      * @param name
      * @param check
      * @return a new Plugin Instance
      */
-
-    protected static Plugin checkLast(String name, File check){
+    protected static Plugin setLatestFile(String name, File check){
         File latest = check;
         Plugin plugin = new Plugin();
+        plugin.setLatestFile(check);
         plugin.setName(name);
-        return openJar(plugin,latest);
+        return plugin;
     }
 
     /**
      *
      * @param plugin
-     * @param file
      * @return the same Plugin ref that was a param updated.
      */
-    private static Plugin openJar(Plugin plugin, File file){
+    private static Plugin setLatestVer(Plugin plugin){
 
         try {
+            if(plugin.getLatestFile() ==  null) return plugin;
+            File file = plugin.getLatestFile();
             JarFile jar = new JarFile(file);
             JarEntry je = jar.getJarEntry("plugin.yml");
+            JarEntry sv = jar.getJarEntry("spigot.ver");
+            String spigotVer = null;
+            if(sv != null){
+                InputStream svstream = jar.getInputStream(sv);
+                InputStreamReader reader = new InputStreamReader(svstream);
+                BufferedReader bs = new BufferedReader(reader);
+                spigotVer = bs.readLine();
+                bs.close();
+                reader.close();
+                svstream.close();
+            }
             InputStream stream = jar.getInputStream(je);
             PluginDescriptionFile pdf = new PluginDescriptionFile(stream);
             stream.close();
-            plugin.setVersion(pdf.getVersion());
+            if(spigotVer != null && !spigotVer.equals(pdf.getVersion())){
+                plugin.setVersion(spigotVer);}
+                else {
+                plugin.setVersion(pdf.getVersion());
+            }
             plugin.setLastUpdated(new Date(file.lastModified()));
         } catch (ZipException e){
             //supress
@@ -186,6 +207,59 @@ public class SpigotUpdater {
             System.out.println(e.getLocalizedMessage());
         }
         return plugin;
+    }
+
+    /**
+     * Adds a entry to the jar that contains the spigotmc version from the website
+     *
+     * @param plugin
+     */
+    static void addSpigotVer(Plugin plugin, String ver){
+        if(plugin.getLatestFile() == null) return;
+        File file = plugin.getLatestFile();
+        try {
+            JarFile oldjar = new JarFile(file);
+            File newFile = new File(file.getParentFile(),getFormat().format(Calendar.getInstance().getTime()) + "-"+ver+"-s.jar");
+            JarOutputStream tempJarOutputStream = new JarOutputStream(new FileOutputStream(newFile));
+            File spigotver = new File(file.getParentFile(),"spigot.ver");
+            if(spigotver.exists())spigotver.delete();
+            spigotver.createNewFile();
+            Writer wr = new FileWriter(spigotver);
+            BufferedWriter writer = new BufferedWriter(wr);
+            writer.write(ver);
+            writer.newLine();
+            writer.close();
+            wr.close();
+            try (FileInputStream stream = new FileInputStream(spigotver)) {
+                byte[] buffer = new byte[1024];
+                int bytesRead = 0;
+                JarEntry je = new JarEntry(spigotver.getName());
+                tempJarOutputStream.putNextEntry(je);
+                while ((bytesRead = stream.read(buffer)) != -1) {
+                    tempJarOutputStream.write(buffer, 0, bytesRead);
+                }
+            }
+            Enumeration jarEntries = oldjar.entries();
+            while(jarEntries.hasMoreElements()) {
+                JarEntry entry = (JarEntry) jarEntries.nextElement();
+                InputStream entryInputStream = oldjar.getInputStream(entry);
+                tempJarOutputStream.putNextEntry(entry);
+                byte[] buffer = new byte[1024];
+                int bytesRead = 0;
+                while ((bytesRead = entryInputStream.read(buffer)) != -1) {
+                    tempJarOutputStream.write(buffer, 0, bytesRead);
+                }
+            }
+            tempJarOutputStream.close();
+            file.delete();
+            spigotver.delete();
+            newFile.renameTo(file);
+        }catch (ZipException e){
+
+        }catch (IOException e){
+
+        }
+
     }
 
     private static UpdateCallback getUpdateCallBack(SpigetUpdater updater, Plugin p, boolean check){
