@@ -173,7 +173,7 @@ public class SpigetUpdater extends SpigetUpdateAbstract{
                 UpdateDownloader.download(latestResourceInfo, updateFile, userAgent);
                 p.setSpigotVersion(latestVer);
                 p.addSpigotVer(latestVer);
-                Plugin updated = SpigotUpdater.checkDownloadedVer(updateFile);
+                Plugin updated = SpigotUpdater.checkDownloadedVer(p.getLatestFile());
                 if(!updated.getVersion().equals(latestVer)){
                     if(updated.getVersion().equals(p.getVersion())){
                         updateFile.delete();

@@ -66,7 +66,7 @@ public class Plugin {
         this.spigotVersion = spigotVersion;
     }
 
-    private File getLatestFile() {
+    public File getLatestFile() {
         return latestFile;
     }
 
@@ -196,6 +196,7 @@ public class Plugin {
             file.delete();
             spigotver.delete();
             newFile.renameTo(file);
+            setLatestFile(newFile);
         }catch (ZipException e){
 
         }catch (IOException e){
