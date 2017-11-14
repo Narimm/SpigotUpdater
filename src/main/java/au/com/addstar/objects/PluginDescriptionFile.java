@@ -40,7 +40,6 @@ import org.yaml.snakeyaml.nodes.Node;
 import com.google.common.collect.ImmutableSet;
 
 
-
 /**
  * This type is the runtime-container for the information in the plugin.yml.
  * All plugins must have a respective plugin.yml. For plugins written in java
@@ -67,66 +66,66 @@ import com.google.common.collect.ImmutableSet;
  * the respective method documentations:
  * <table border=1>
  * <tr>
- *     <th>Node</th>
- *     <th>Method</th>
- *     <th>Summary</th>
+ * <th>Node</th>
+ * <th>Method</th>
+ * <th>Summary</th>
  * </tr><tr>
- *     <td><code>name</code></td>
- *     <td>{@link #getName()}</td>
- *     <td>The unique name of plugin</td>
+ * <td><code>name</code></td>
+ * <td>{@link #getName()}</td>
+ * <td>The unique name of plugin</td>
  * </tr><tr>
- *     <td><code>version</code></td>
- *     <td>{@link #getVersion()}</td>
- *     <td>A plugin revision identifier</td>
+ * <td><code>version</code></td>
+ * <td>{@link #getVersion()}</td>
+ * <td>A plugin revision identifier</td>
  * </tr><tr>
- *     <td><code>main</code></td>
- *     <td>{@link #getMain()}</td>
- *     <td>The plugin's initial class file</td>
+ * <td><code>main</code></td>
+ * <td>{@link #getMain()}</td>
+ * <td>The plugin's initial class file</td>
  * </tr><tr>
- *     <td><code>author</code><br><code>authors</code></td>
- *     <td>{@link #getAuthors()}</td>
- *     <td>The plugin contributors</td>
+ * <td><code>author</code><br><code>authors</code></td>
+ * <td>{@link #getAuthors()}</td>
+ * <td>The plugin contributors</td>
  * </tr><tr>
- *     <td><code>description</code></td>
- *     <td>{@link #getDescription()}</td>
- *     <td>Human readable plugin summary</td>
+ * <td><code>description</code></td>
+ * <td>{@link #getDescription()}</td>
+ * <td>Human readable plugin summary</td>
  * </tr><tr>
- *     <td><code>website</code></td>
- *     <td>{@link #getWebsite()}</td>
- *     <td>The URL to the plugin's site</td>
+ * <td><code>website</code></td>
+ * <td>{@link #getWebsite()}</td>
+ * <td>The URL to the plugin's site</td>
  * </tr><tr>
- *     <td><code>prefix</code></td>
- *     <td>{@link #getPrefix()}</td>
- *     <td>The token to prefix plugin log entries</td>
+ * <td><code>prefix</code></td>
+ * <td>{@link #getPrefix()}</td>
+ * <td>The token to prefix plugin log entries</td>
  * </tr><tr>
- *     <td><code>database</code></td>
- *     <td>{@link #isDatabaseEnabled()}</td>
- *     <td>Indicator to enable database support</td>
- *     <td><code>permissions</code></td>
-
+ * <td><code>database</code></td>
+ * <td>{@link #isDatabaseEnabled()}</td>
+ * <td>Indicator to enable database support</td>
+ * <td><code>permissions</code></td>
+ * <p>
  * </tr><tr>
- *     <td><code>awareness</code></td>
- *     <td>{@link #getAwareness()}</td>
- *     <td>The concepts that the plugin acknowledges</td>
+ * <td><code>awareness</code></td>
+ * <td>{@link #getAwareness()}</td>
+ * <td>The concepts that the plugin acknowledges</td>
  * </tr>
  * </table>
  * <p>
  * A plugin.yml example:<blockquote><pre>
- *name: Inferno
- *version: 1.4.1
- *description: This plugin is so 31337. You can set yourself on fire.
- *# We could place every author in the authors list, but chose not to for illustrative purposes
- *# Also, having an author distinguishes that person as the project lead, and ensures their
- *# name is displayed first
- *author: CaptainInflamo
- *authors: [Cogito, verrier, EvilSeph]
- *website: http://www.curse.com/server-mods/minecraft/myplugin
- *
- *main: com.captaininflamo.bukkit.inferno.Inferno
- *database: false
- *depend: [NewFire, FlameWire]
- *
- *commands:
+ * name: Inferno
+ * version: 1.4.1
+ * description: This plugin is so 31337. You can set yourself on fire.
+ * # We could place every author in the authors list, but chose not to for illustrative purposes
+ * # Also, having an author distinguishes that person as the project lead, and ensures their
+ * # name is displayed first
+ * author: CaptainInflamo
+ * authors: [Cogito, verrier, EvilSeph]
+ * website: http://www.curse.com/server-mods/minecraft/myplugin
+ * <p>
+ * main: com.captaininflamo.bukkit.inferno.Inferno
+ * database: false
+ * depend: [NewFire, FlameWire]
+ * <p>
+ * commands:
  *  flagrate:
  *    description: Set yourself on fire.
  *    aliases: [combust_me, combustMe]
@@ -140,8 +139,8 @@ import com.google.common.collect.ImmutableSet;
  *      /&lt;command&gt; [player]
  *      Example: /&lt;command&gt; - see how many times you have burned to death
  *      Example: /&lt;command&gt; CaptainIce - see how many times CaptainIce has burned to death
- *
- *permissions:
+ * <p>
+ * permissions:
  *  inferno.*:
  *    description: Gives access to all Inferno commands
  *    children:
@@ -159,7 +158,7 @@ import com.google.common.collect.ImmutableSet;
  *    default: op
  *    children:
  *      inferno.burningdeaths: true
- *</pre></blockquote>
+ * </pre></blockquote>
  */
 final class PluginDescriptionFile {
     private static final ThreadLocal<Yaml> YAML = new ThreadLocal<Yaml>() {
@@ -187,20 +186,20 @@ final class PluginDescriptionFile {
             });
         }
     };
-    private String rawName = null;
-    private String name = null;
     private final String main = null;
     private final String classLoaderOf = null;
-    private String version = null;
     private final Map<String, Map<String, Object>> commands = null;
-    private String description = null;
     private final List<String> authors = null;
+    private final Set<PluginAwareness> awareness = ImmutableSet.of();
+    private String rawName = null;
+    private String name = null;
+    private String version = null;
+    private String description = null;
     private String website = null;
     private String prefix = null;
     private boolean database = false;
-    private final Set<PluginAwareness> awareness = ImmutableSet.of();
 
-    public PluginDescriptionFile(final InputStream stream) throws InvalidDescriptionException{
+    public PluginDescriptionFile(final InputStream stream) throws InvalidDescriptionException {
         loadMap(asMap(YAML.get().load(stream)));
     }
 
@@ -208,9 +207,9 @@ final class PluginDescriptionFile {
      * Loads a PluginDescriptionFile from the specified reader
      *
      * @param reader The reade
-     *     invalid
+     *               invalid
      */
-    public PluginDescriptionFile(final Reader reader) throws InvalidDescriptionException{
+    public PluginDescriptionFile(final Reader reader) throws InvalidDescriptionException {
         loadMap(asMap(YAML.get().load(reader)));
     }
 
@@ -220,14 +219,14 @@ final class PluginDescriptionFile {
      * plugins.
      * <ul>
      * <li>Must consist of all alphanumeric characters, underscores, hyphon,
-     *     and period (a-z,A-Z,0-9, _.-). Any other character will cause the
-     *     plugin.yml to fail loading.
+     * and period (a-z,A-Z,0-9, _.-). Any other character will cause the
+     * plugin.yml to fail loading.
      * <li>Used to determine the name of the plugin's data folder. Data
-     *     folders are placed in the ./plugins/ directory by default, but this
-     *     behavior should not be relied on. {@link Plugin#()}
-     *     should be used to reference the data folder.
+     * folders are placed in the ./plugins/ directory by default, but this
+     * behavior should not be relied on. {@link Plugin#()}
+     * should be used to reference the data folder.
      * <li>It is good practice to name your jar the same as this, for example
-     *     'MyPlugin.jar'.
+     * 'MyPlugin.jar'.
      * <li>Case sensitive..
      * <li>Using spaces in the plugin's name is deprecated.
      * </ul>
@@ -246,9 +245,9 @@ final class PluginDescriptionFile {
      * Gives the version of the plugin.
      * <ul>
      * <li>Version is an arbitrary string, however the most common format is
-     *     MajorRelease.MinorRelease.Build (eg: 1.4.1).
+     * MajorRelease.MinorRelease.Build (eg: 1.4.1).
      * <li>Typically you will increment this every time you release a new
-     *     feature or bug fix.
+     * feature or bug fix.
      * <li>Displayed when a user types <code>/version PluginName</code>
      * </ul>
      * <p>
@@ -268,12 +267,12 @@ final class PluginDescriptionFile {
      * to successfully be resolved at runtime. For most plugins, this is the
      * <ul>
      * <li>This must contain the full namespace including the class file
-     *     itself.
+     * itself.
      * <li>If your namespace is <code>org.bukkit.plugin</code>, and your class
-     *     file is called <code>MyPlugin</code> then this must be
-     *     <code>org.bukkit.plugin.MyPlugin</code>
+     * file is called <code>MyPlugin</code> then this must be
+     * <code>org.bukkit.plugin.MyPlugin</code>
      * <li>No plugin can use <code>org.bukkit.</code> as a base package for
-     *     <b>any class</b>, including the main class.
+     * <b>any class</b>, including the main class.
      * </ul>
      * <p>
      * In the plugin.yml, this entry is named <code>main</code>.
@@ -312,12 +311,12 @@ final class PluginDescriptionFile {
      * <ul>
      * <li>Gives credit to the developer.
      * <li>Used in some server error messages to provide helpful feedback on
-     *     who to contact when an error occurs.
+     * who to contact when an error occurs.
      * <li>A bukkit.org forum handle or email address is recommended.
      * <li>Is displayed when a user types <code>/version PluginName</code>
      * <li><code>authors</code> must be in <a
-     *     href="http://en.wikipedia.org/wiki/YAML#Lists">YAML list
-     *     format</a>.
+     * href="http://en.wikipedia.org/wiki/YAML#Lists">YAML list
+     * format</a>.
      * </ul>
      * <p>
      * In the plugin.yml, this has two entries, <code>author</code> and
@@ -330,12 +329,12 @@ final class PluginDescriptionFile {
      * When both are specified, author will be the first entry in the list, so
      * this example:
      * <blockquote><pre>author: Grum
-     *authors:
-     *- feildmaster
-     *- amaranth</pre></blockquote>
+     * authors:
+     * - feildmaster
+     * - amaranth</pre></blockquote>
      * Is equivilant to this example:
      * <blockquote><pre>authors: [Grum, feildmaster, aramanth]<pre></blockquote>
-     *
+     * <p>
      * @return an immutable list of the plugin's authors
      */
     public List<String> getAuthors() {
@@ -346,7 +345,7 @@ final class PluginDescriptionFile {
      * Gives the plugin's or plugin's author's website.
      * <ul>
      * <li>A link to the Curse page that includes documentation and downloads
-     *     is highly recommended.
+     * is highly recommended.
      * <li>Displayed when a user types <code>/version PluginName</code>
      * </ul>
      * <p>
@@ -379,12 +378,15 @@ final class PluginDescriptionFile {
         return database;
     }
 
+    public void setDatabaseEnabled(boolean database) {
+        this.database = database;
+    }
 
     /**
      * Gives the token to prefix plugin-specific logging messages with.
      * <ul>
      * <li>If not specified, the server uses the plugin's {@link #getName()
-     *     name}.
+     * name}.
      * <li>This should clearly indicate what plugin is being logged.
      * </ul>
      * <p>
@@ -398,7 +400,6 @@ final class PluginDescriptionFile {
         return prefix;
     }
 
-
     /**
      * Gives a set of every {@link PluginAwareness} for a plugin. An awareness
      * dictates something that a plugin developer acknowledges when the plugin
@@ -409,23 +410,23 @@ final class PluginDescriptionFile {
      * <p>
      * <ul>
      * <li>Currently only supports the enumerated values in {@link
-     *     PluginAwareness.Flags}.
+     * PluginAwareness.Flags}.
      * <li>Each awareness starts the identifier with bang-at
-     *     (<code>!@</code>).
+     * (<code>!@</code>).
      * <li>Unrecognized (future / unimplemented) entries are quietly replaced
-     *     by a generic object that implements PluginAwareness.
+     * by a generic object that implements PluginAwareness.
      * <li>A type of awareness must be defined by the runtime and acknowledged
-     *     by the API, effectively discluding any derived type from any
-     *     plugin's classpath.
+     * by the API, effectively discluding any derived type from any
+     * plugin's classpath.
      * <li><code>awareness</code> must be in <a
-     *     href="http://en.wikipedia.org/wiki/YAML#Lists">YAML list
-     *     format</a>.
+     * href="http://en.wikipedia.org/wiki/YAML#Lists">YAML list
+     * format</a>.
      * </ul>
      * <p>
      * In the plugin.yml, this entry is named <code>awareness</code>.
      * <p>
      * Example:<blockquote><pre>awareness:
-     *- !@UTF8</pre></blockquote>
+     * - !@UTF8</pre></blockquote>
      * <p>
      * <b>Note:</b> Although unknown versions of some future awareness are
      * gracefully substituted, previous versions of Bukkit (ones prior to the
@@ -449,11 +450,6 @@ final class PluginDescriptionFile {
         return name + " v" + version;
     }
 
-
-    public void setDatabaseEnabled(boolean database) {
-        this.database = database;
-    }
-
     /**
      * Saves this PluginDescriptionFile to the given writer
      *
@@ -463,7 +459,7 @@ final class PluginDescriptionFile {
         YAML.get().dump(saveMap(), writer);
     }
 
-    private void loadMap(Map<?, ?> map) throws InvalidDescriptionException{
+    private void loadMap(Map<?, ?> map) throws InvalidDescriptionException {
         try {
             name = rawName = map.get("name").toString();
 
@@ -484,7 +480,6 @@ final class PluginDescriptionFile {
         } catch (ClassCastException ex) {
             throw new InvalidDescriptionException(ex, "version is of wrong type");
         }
-
 
 
         if (map.get("database") != null) {
@@ -544,9 +539,9 @@ final class PluginDescriptionFile {
         return map;
     }
 
-    private Map<?,?> asMap(Object object) throws InvalidDescriptionException {
+    private Map<?, ?> asMap(Object object) throws InvalidDescriptionException {
         if (object instanceof Map) {
-            return (Map<?,?>) object;
+            return (Map<?, ?>) object;
         }
         throw new InvalidDescriptionException(object + " is not properly structured.");
     }

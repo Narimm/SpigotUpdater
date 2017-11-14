@@ -24,17 +24,16 @@
 
 package au.com.addstar;
 
-import au.com.addstar.objects.ExtendedResourceInfo;
-import au.com.addstar.objects.Plugin;
-import au.com.addstar.objects.VersionComparator;
+import au.com.addstar.objects.*;
+import be.maximvdw.spigotsite.api.exceptions.ConnectionFailedException;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.inventivetalent.update.spiget.ResourceVersion;
-import org.inventivetalent.update.spiget.SpigetUpdateAbstract;
-import org.inventivetalent.update.spiget.UpdateCallback;
+import org.apache.commons.io.FileUtils;
+
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -49,26 +48,26 @@ import static au.com.addstar.SpigotUpdater.getSpigotDownloader;
  * Created for the Addstar
  * Created by Narimm on 12/10/2017.
  */
-public class SpigetUpdater extends SpigetUpdateAbstract{
+public class SpigetUpdater extends SpigetUpdateAbstract {
 
-    private DownloadFailReason failReason = DownloadFailReason.UNKNOWN;
     private final File updateDir;
-    private ExtendedResourceInfo latestResourceInfo;
+    private DownloadFailReason failReason = DownloadFailReason.UNKNOWN;
+    private ResourceInfo latestResourceInfo;
     private String latestVer;
     private boolean external;
 
 
-    public void setExternal(boolean external) {
-        this.external = external;
-    }
-
     public SpigetUpdater(String currentVersion, Logger log, Integer resourceID, Configuration c) {
-        super(resourceID,currentVersion, log);
+        super(resourceID, currentVersion, log);
         Configuration config = c;
         external = false;
         updateDir = config.downloadDir;
         setUserAgent("AddstarResourceUpdater");
         setVersionComparator(VersionComparator.MAVEN_VER);
+    }
+
+    public void setExternal(boolean external) {
+        this.external = external;
     }
 
     @Override
@@ -90,8 +89,8 @@ public class SpigetUpdater extends SpigetUpdateAbstract{
                 connection = (HttpURLConnection) new URL(String.format(RESOURCE_INFO, resourceId, System.currentTimeMillis())).openConnection();
                 connection.setRequestProperty("User-Agent", getUserAgent());
                 JsonObject jsonObject = new JsonParser().parse(new InputStreamReader(connection.getInputStream())).getAsJsonObject();
-                latestResourceInfo = new Gson().fromJson(jsonObject, ExtendedResourceInfo.class);
-                if(!latestResourceInfo.premium) {
+                latestResourceInfo = new Gson().fromJson(jsonObject, ResourceInfo.class);
+                if (!latestResourceInfo.premium) {
                     try {
                         connection = (HttpURLConnection) new URL(String.format(RESOURCE_VERSION, resourceId, System.currentTimeMillis())).openConnection();
                         connection.setRequestProperty("User-Agent", getUserAgent());
@@ -100,36 +99,35 @@ public class SpigetUpdater extends SpigetUpdateAbstract{
                     } catch (Exception e) {
                         log.log(Level.WARNING, "Failed to get version info from spiget.org", e);
                     }
-                    super.latestResourceInfo = latestResourceInfo;
                     if (isVersionNewer(currentVersion, latestResourceInfo.latestVersion.name)) {
                         callback.updateAvailable(latestResourceInfo.latestVersion.name, "https://spigotmc.org/" + latestResourceInfo.file.url, !latestResourceInfo.external);
                     } else {
                         callback.upToDate();
                     }
-                }else{
-                        latestVer = Utilities.readURL("https://api.spigotmc.org/legacy/update.php?resource="+resourceId);
-                        if (isVersionNewer(currentVersion, latestVer)) {
-                            callback.updateAvailable(latestVer, "https://spigotmc.org/" + latestResourceInfo.file.url, !latestResourceInfo.external);
-                        } else {
-                            callback.upToDate();
-                        }
+                } else {
+                    latestVer = Utilities.readURL("https://api.spigotmc.org/legacy/update.php?resource=" + resourceId);
+                    if (isVersionNewer(currentVersion, latestVer)) {
+                        callback.updateAvailable(latestVer, "https://spigotmc.org/" + latestResourceInfo.file.url, !latestResourceInfo.external);
+                    } else {
+                        callback.upToDate();
+                    }
                 }
             } catch (Exception e) {
-                log.log(Level.WARNING, "Failed to get resource info from spiget.org:"+resourceId);
+                log.log(Level.WARNING, "Failed to get resource info from spiget.org:" + resourceId);
             }
         });
     }
 
-    public boolean downloadUpdate(Plugin p){
+    public boolean downloadUpdate(Plugin p) {
         if (latestResourceInfo == null) {
             failReason = DownloadFailReason.NOT_CHECKED;
             return false;// Update not yet checked
         }
 
-        if(latestResourceInfo.latestVersion != null) {
+        if (latestResourceInfo.latestVersion != null) {
             latestVer = latestResourceInfo.latestVersion.name;
         }
-        if(latestVer == null){
+        if (latestVer == null) {
             failReason = DownloadFailReason.UNKNOWN;
             return false;// Version is no update
         }
@@ -143,52 +141,78 @@ public class SpigetUpdater extends SpigetUpdateAbstract{
             return false;// No download available
         }
         File updateDirectory = new File(updateDir, p.getName());
-        if(!updateDirectory.exists())updateDirectory.mkdir();
-        if(!updateDirectory.exists()){
+        if (!updateDirectory.exists()) updateDirectory.mkdir();
+        if (!updateDirectory.exists()) {
             failReason = DownloadFailReason.NO_UPDATE_FOLDER;
             return false;
         }
-        File updateFile = new File(updateDirectory,getFormat().format(Calendar.getInstance().getTime()) + "-"+latestVer+".jar");
-        if(latestResourceInfo.premium){
-            if(getSpigotDownloader().downloadUpdate(latestResourceInfo,updateFile)){
-                p.setVersion(latestVer);
-                p.addSpigotVer(latestVer);
-                p.setLastUpdated(Calendar.getInstance().getTime());
-            }else{
+        File updateFile = new File(updateDirectory, getFormat().format(Calendar.getInstance().getTime()) + "-" + latestVer + ".jar");
+        if (latestResourceInfo.premium) {
+            try {
+                if (getSpigotDownloader().downloadUpdate(latestResourceInfo, updateFile)) {
+                    p.setVersion(latestVer);
+                    p.addSpigotVer(latestVer);
+                    p.setLastUpdated(Calendar.getInstance().getTime());
+                } else {
+                    failReason = DownloadFailReason.PREMIUM;
+                    return false;
+                }
+            } catch (InvalidDownloadException | ConnectionFailedException e) {
                 failReason = DownloadFailReason.PREMIUM;
+                return false;
+            } catch (RuntimeException e){
+                failReason = DownloadFailReason.NO_PLUGIN_FILE;
                 return false;
             }
 
-        }else if(latestResourceInfo.external) {
-            if(getSpigotDownloader().downloadUpdate(latestResourceInfo,updateFile)){
-                p.setVersion(latestVer);
-                p.addSpigotVer(latestVer);
-                p.setLastUpdated(Calendar.getInstance().getTime());
-            }else{
-                failReason = DownloadFailReason.EXTERNAL_DISALLOWED;
+        } else if (latestResourceInfo.external) {
+            try {
+                if (getSpigotDownloader().downloadUpdate(latestResourceInfo, updateFile)) {
+                    p.setVersion(latestVer);
+                    p.addSpigotVer(latestVer);
+                    p.setLastUpdated(Calendar.getInstance().getTime());
+                }
+            } catch (InvalidDownloadException | ConnectionFailedException e) {
+                System.out.println(e.getMessage());
+                failReason = DownloadFailReason.NO_DOWNLOAD;
+                return false;
+            } catch (RuntimeException e) {
+                System.out.println(e.getLocalizedMessage());
+                failReason = DownloadFailReason.NO_PLUGIN_FILE;
                 return false;
             }
-        }else{
+        } else {
             try {
                 UpdateDownloader.download(latestResourceInfo, updateFile, userAgent);
                 p.setSpigotVersion(latestVer);
-                p.addSpigotVer(latestVer);
-                Plugin updated = SpigotUpdater.checkDownloadedVer(p.getLatestFile());
-                if(!updated.getVersion().equals(latestVer)){
-                    if(updated.getVersion().equals(p.getVersion())){
+                Plugin updated = Plugin.checkDownloadedVer(updateFile);
+                if(updated.getPdfVersion().equals(p.getPdfVersion()) && updated.getSpigotVersion() != null && !updated.getSpigotVersion().equals(latestVer)){
+                    //it was up to date but the existing file did not have a spigot.ver - we will add it delete the old file.
+                        FileUtils.deleteQuietly(p.getLatestFile());
+                        p.setLatestFile(updateFile);
+                        p.addSpigotVer(latestVer);
+                        p.setVersion(latestVer);
+                        return true;
+                }
+                if(p.getPdfVersion()!= null && isVersionNewer(p.getPdfVersion(),updated.getPdfVersion())) {
+                    //its newer make sure spigotVer is set.
+                    if(updated.getSpigotVersion() == null && !updated.getPdfVersion().equals(updated.getSpigotVersion())) {
+                        updated.addSpigotVer(latestVer);
+                    }
+                    return true;
+                }
+                if (updated.getVersion().equals(p.getVersion())) {
                         updateFile.delete();
-                        if(updateFile.exists()){
+                        if (updateFile.exists()) {
                             System.out.println("Could not remove incorrectly Downloaded File: " + updateFile.getAbsolutePath());
                         }
                         failReason = DownloadFailReason.VERSION_MISMATCH;
                         return false;
 
-                    }
-
                 }
                 p.setVersion(latestVer);
                 p.setLastUpdated(Calendar.getInstance().getTime());
-            }catch (Exception e){
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }

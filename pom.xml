@@ -19,11 +19,6 @@
             <version>0.1.2-SNAPSHOT</version>
         </dependency>
         <dependency>
-                <groupId>org.inventivetalent.spiget-update</groupId>
-                <artifactId>core</artifactId>
-                <version>1.4.0</version>
-        </dependency>
-        <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.4</version>

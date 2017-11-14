@@ -24,10 +24,13 @@
 
 package au.com.addstar;
 
+import au.com.addstar.objects.InvalidDownloadException;
 import au.com.addstar.objects.Plugin;
+import au.com.addstar.objects.ResourceInfo;
 import be.maximvdw.spigotsite.SpigotSiteCore;
 import be.maximvdw.spigotsite.api.SpigotSiteAPI;
 import be.maximvdw.spigotsite.api.exceptions.ConnectionFailedException;
+import be.maximvdw.spigotsite.api.resource.Resource;
 import be.maximvdw.spigotsite.api.user.User;
 import be.maximvdw.spigotsite.api.user.exceptions.InvalidCredentialsException;
 import be.maximvdw.spigotsite.api.user.exceptions.TwoFactorAuthenticationException;
@@ -36,12 +39,9 @@ import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.Page;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.util.Cookie;
-import org.inventivetalent.update.spiget.ResourceInfo;
+import org.apache.commons.io.FileUtils;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.Map;
 
 /**
@@ -50,8 +50,8 @@ import java.util.Map;
  */
 public class SpigotDirectDownloader {
     private final WebClient webClient;
-    private User spigotUser;
     private final SpigotSiteAPI api;
+    private User spigotUser;
 
     public SpigotDirectDownloader(Configuration config) {
         api = new SpigotSiteCore();
@@ -69,40 +69,47 @@ public class SpigotDirectDownloader {
         } catch (TwoFactorAuthenticationException | ConnectionFailedException | InvalidCredentialsException e) {
             e.printStackTrace();
         }
-        if(spigotUser != null){
+        if (spigotUser != null) {
             Map<String, String> cookies = ((SpigotUser) spigotUser).getCookies();
             for (Map.Entry<String, String> entry : cookies.entrySet())
                 webClient.getCookieManager().addCookie(new Cookie("spigotmc.org", entry.getKey(), entry.getValue()));
         }
     }
-
-    public boolean downloadUpdate(ResourceInfo info, File file){
-        webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+    public boolean downloadUpdate(ResourceInfo info, File file) throws InvalidDownloadException, ConnectionFailedException {
+        return downloadUpdate(info,file,10000L);
+    }
+    public boolean downloadUpdate(ResourceInfo info, File file,Long timeOut) throws InvalidDownloadException, ConnectionFailedException {
         try {
-            Page page = webClient.getPage(api.getResourceManager().getResourceById(info.id, spigotUser).getDownloadURL());
-            //HtmlPage htmlPage = (HtmlPage) page;
-            webClient.waitForBackgroundJavaScript(10_000);
+            webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
+            Resource resource = api.getResourceManager().getResourceById(info.id,spigotUser);
+            if(info.premium && !spigotUser.getPurchasedResources().contains(resource)){
+                return false;
+            }
+            Page page = webClient.getPage(resource.getDownloadURL());
+            webClient.waitForBackgroundJavaScript(timeOut); // todo need to add check for need purchase or no auth.
             BufferedInputStream in = new java.io.BufferedInputStream(page.getEnclosingWindow().getEnclosedPage().getWebResponse().getContentAsStream());
             java.io.FileOutputStream fos = new java.io.FileOutputStream(file);
             java.io.BufferedOutputStream bout = new BufferedOutputStream(fos, 1024);
             byte[] data = new byte[1024];
             int x;
             while ((x = in.read(data, 0, 1024)) >= 0) {
-                bout.write(data,0,x);
+                bout.write(data, 0, x);
             }
             bout.close();
             in.close();
             fos.close();
-            Plugin plugin = SpigotUpdater.checkDownloadedVer(file);
-            if(plugin == null || plugin.getVersion() == null){
-                file.delete();
-                return false;
-            }
-            return true;
-        } catch (IOException | ConnectionFailedException | ClassCastException e) {
+        }catch (IOException e){
             e.printStackTrace();
         }
-        return false;
+        Plugin plugin = Plugin.checkDownloadedVer(file);
+        if (plugin == null || plugin.getVersion() == null) {
+            FileUtils.deleteQuietly(file);
+            if(timeOut<=15000L && info.external){
+                downloadUpdate(info,file,timeOut+5000L);
+            }
+            throw new InvalidDownloadException("File did not contain a plugin.yml");
+        }
+        return true;
     }
 
 }

@@ -32,22 +32,21 @@ import java.util.Properties;
  * Created by benjamincharlton on 7/12/2016.
  */
 class Configuration {
+    private final Properties defaultProps;
+    private final File config = new File("config.properties");
     String username = "";
     String password = "";
     Boolean externalDownloads = false;
     File downloadDir = null;
     private boolean downloadJars = false;
 
-    private final Properties defaultProps;
-    private  final File config = new File("config.properties");
-
     public Configuration() {
         InputStream input = Configuration.class.getResourceAsStream("/config.properties");
         defaultProps = new Properties();
-        try{
+        try {
             defaultProps.load(input);
             input.close();
-        }catch (IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
         Properties prop = new Properties();
@@ -61,14 +60,14 @@ class Configuration {
                 createConfig();
                 prop = defaultProps;
             }
-        } catch(IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
         setVariables(prop);
     }
 
 
-    private void createConfig(){
+    private void createConfig() {
         try {
             if (config.createNewFile()) {
                 OutputStream out = new FileOutputStream(config);
@@ -80,7 +79,7 @@ class Configuration {
         }
     }
 
-    public void reloadConfig(){
+    public void reloadConfig() {
         Properties prop = new Properties();
         try {
             File configFile = new File("config.properties");
@@ -96,12 +95,12 @@ class Configuration {
                 out.close();
             }
             setVariables(prop);
-        } catch(IOException e){
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void setVariables(Properties prop){
+    private void setVariables(Properties prop) {
         username = prop.getProperty("username", "");
         password = prop.getProperty("password", "");
         downloadDir = new File(prop.getProperty("downloadLocation", "."));
@@ -109,8 +108,6 @@ class Configuration {
         downloadJars = Boolean.parseBoolean(prop.getProperty("downloadJars", "false"));
 
     }
-
-
 
 
 }

@@ -24,26 +24,17 @@
 
 package au.com.addstar.objects;
 
-import java.util.Set;
-
-
 /**
- * Represents a concept that a plugin is aware of.
- * <p>
- * The internal representation may be singleton, or be a parameterized
- * instance, but must be immutable.
+ * Created for the Addtsr
+ * Created by Narimm on 26/10/2017.
  */
-public interface PluginAwareness {
-    /**
-     * Each entry here represents a particular plugin's awareness. These can
-     * be checked by using {@link PluginDescriptionFile#getAwareness()}.{@link
-     * Set#contains(Object) contains(flag)}.
-     */
-    enum Flags implements PluginAwareness {
-        /**
-         * This specifies that all (text) resources stored in a plugin's jar
-         * use UTF-8 encoding.
-         */
-        UTF8,;
-    }
+public class ResourceInfo {
+
+    public String name;
+    public int id;
+    public boolean external;
+    public ResourceFile file;
+    public ResourceVersion latestVersion;
+    public boolean premium;
+
 }

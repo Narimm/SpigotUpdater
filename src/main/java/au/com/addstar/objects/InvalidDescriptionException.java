@@ -28,6 +28,7 @@ package au.com.addstar.objects;
  * Created for the Ark: Survival Evolved.
  * Created by Narimm on 9/11/2017.
  */
+
 /**
  * Thrown when attempting to load an invalid PluginDescriptionFile
  */

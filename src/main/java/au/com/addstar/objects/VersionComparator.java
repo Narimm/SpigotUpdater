@@ -30,14 +30,13 @@ import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
  * Created for use for the Add5tar MC Minecraft server
  * Created by benjamincharlton on 13/11/2017.
  */
-public abstract class VersionComparator extends org.inventivetalent.update.spiget.comparator.VersionComparator{
+public abstract class VersionComparator {
 
     public static final VersionComparator MAVEN_VER = new VersionComparator() {
-        @Override
         public boolean isNewer(String var1, String var2) {
             DefaultArtifactVersion current = new DefaultArtifactVersion(var1);
             DefaultArtifactVersion check = new DefaultArtifactVersion(var2);
-            if(current.getMajorVersion()+current.getMinorVersion()+current.getIncrementalVersion()==0){
+            if (current.getMajorVersion() + current.getMinorVersion() + current.getIncrementalVersion() == 0) {
                 //not maven compat fallback
                 return !var1.equals(var2);
             }
@@ -45,8 +44,58 @@ public abstract class VersionComparator extends org.inventivetalent.update.spige
             return result > 0;
         }
     };
+    public static final VersionComparator EQUAL = new VersionComparator() {
+        @Override
+        public boolean isNewer(String currentVersion, String checkVersion) {
+            return !currentVersion.equals(checkVersion);
+        }
+    };
 
-    public boolean equals(String var1,String var2){
-            return var1.equals(var2);
+    /**
+     * Compares versions by their Sematic Version (<code>Major.Minor.Patch</code>, <a href="http://semver.org/">semver.org</a>). Removes dots and compares the resulting Integer values
+     */
+    public static final VersionComparator SEM_VER = new VersionComparator() {
+        @Override
+        public boolean isNewer(String currentVersion, String checkVersion) {
+            currentVersion = currentVersion.replace(".", "");
+            checkVersion = checkVersion.replace(".", "");
+
+            try {
+                int current = Integer.parseInt(currentVersion);
+                int check = Integer.parseInt(checkVersion);
+
+                return check > current;
+            } catch (NumberFormatException e) {
+                System.err.println("[SpigetUpdate] Invalid SemVer versions specified [" + currentVersion + "] [" + checkVersion + "]");
+            }
+            return false;
+        }
+    };
+
+    /**
+     * Same as {@link VersionComparator#SEM_VER}, but supports version names with '-SNAPSHOT' prefixes
+     */
+    public static final VersionComparator SEM_VER_SNAPSHOT = new VersionComparator() {
+        @Override
+        public boolean isNewer(String currentVersion, String checkVersion) {
+            currentVersion = currentVersion.replace("-SNAPSHOT", "");
+            checkVersion = checkVersion.replace("-SNAPSHOT", "");
+
+            return SEM_VER.isNewer(currentVersion, checkVersion);
+        }
+    };
+
+    /**
+     * Called to check if a version is newer
+     *
+     * @param currentVersion Current version of the plugin
+     * @param checkVersion   Version to check
+     * @return <code>true</code> if the checked version is newer
+     */
+    public abstract boolean isNewer(String currentVersion, String checkVersion);
+
+
+    public boolean equals(String var1, String var2) {
+        return var1.equals(var2);
     }
 }

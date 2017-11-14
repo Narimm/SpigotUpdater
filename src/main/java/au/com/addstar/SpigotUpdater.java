@@ -26,7 +26,6 @@ package au.com.addstar;
 
 import au.com.addstar.objects.Plugin;
 import org.apache.commons.lang3.StringUtils;
-import org.inventivetalent.update.spiget.UpdateCallback;
 
 import java.io.*;
 import java.text.SimpleDateFormat;
@@ -39,41 +38,39 @@ import java.util.logging.Logger;
  */
 public class SpigotUpdater {
 
+    private static final List<Plugin> plugins = new ArrayList<>();
+    private static final SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
     public static File downloadDir;
     private static File datFile;
-    private static final List<Plugin> plugins = new ArrayList<>();
     private static Boolean externalDownloads;
+    private static SpigotDirectDownloader spigotDownloader;
 
     public static SpigotDirectDownloader getSpigotDownloader() {
         return spigotDownloader;
     }
 
-    private static SpigotDirectDownloader spigotDownloader;
-
     public static SimpleDateFormat getFormat() {
         return format;
     }
 
-    private static final SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
-
     public static void main(String[] args) {
         Configuration config = new Configuration();
         final boolean check = (args.length == 1 && args[0].equals("check"));
-        if(check)System.out.println(" ONLY CHECKING NO DOWNLOADS WILL BE PERFORMED.");
+        if (check) System.out.println(" ONLY CHECKING NO DOWNLOADS WILL BE PERFORMED.");
         downloadDir = config.downloadDir;
-        if(!downloadDir.exists()){
+        if (!downloadDir.exists()) {
             downloadDir.mkdir();
         }
-        datFile = new File(downloadDir,"plugins.dat");
+        datFile = new File(downloadDir, "plugins.dat");
         externalDownloads = config.externalDownloads;
         loadPlugins();
         spigotDownloader = new SpigotDirectDownloader(config);
         int i = 0;
         doOutHeader();
-        for(final Plugin p: plugins) {
+        for (final Plugin p : plugins) {
             SpigetUpdater updater = new SpigetUpdater(p.getVersion(), Logger.getAnonymousLogger(), p.getResourceID(), config);
             updater.setExternal(externalDownloads);
-            updater.checkForUpdate(getUpdateCallBack(updater,p,check));
+            updater.checkForUpdate(getUpdateCallBack(updater, p, check));
             i++;
         }
         /*try {
@@ -83,129 +80,111 @@ public class SpigotUpdater {
         }*/
         System.out.println("Processed:  " + i + " plugins");
     }
-        private static void loadPlugins() {
-            if(datFile.exists()){
-                try {
+
+    private static void loadPlugins() {
+        if (datFile.exists()) {
+            try {
                 BufferedReader b = new BufferedReader(new FileReader(datFile));
                 String l;
-                    while ((l = b.readLine()) != null) {
-                        if (!l.startsWith("#")) {
-                            String[] lineArray = StringUtils.split(l,",");
-                            if(lineArray.length!=0) {
-                                String pluginName = lineArray[0];
-                                String type = lineArray[1];
-                                String source = lineArray[2];
-                                if (source.equals("SPIGOT")) {
-                                    String resourceID = lineArray[3];
-                                    Plugin plugin = new Plugin();
-                                    plugin.setName(pluginName);
-                                    plugin.setResourceID(Integer.parseInt(resourceID));
-                                    plugin.setLatestFile();
-                                    plugin.setLatestVer();
-                                    if(plugin.getVersion() == null )plugin.setVersion("");
-                                    if(plugin.getLastUpdated()== null)plugin.setLastUpdated(new Date(0L));
-                                    plugins.add(plugin);
-                                }
+                while ((l = b.readLine()) != null) {
+                    if (!l.startsWith("#")) {
+                        String[] lineArray = StringUtils.split(l, ",");
+                        if (lineArray.length != 0) {
+                            String pluginName = lineArray[0];
+                            String type = lineArray[1];
+                            String source = lineArray[2];
+                            if (source.equals("SPIGOT")) {
+                                String resourceID = lineArray[3];
+                                Plugin plugin = new Plugin();
+                                plugin.setName(pluginName);
+                                plugin.setResourceID(Integer.parseInt(resourceID));
+                                plugin.setLatestFile();
+                                plugin.setLatestVer();
+                                if (plugin.getVersion() == null) plugin.setVersion("");
+                                if (plugin.getLastUpdated() == null) plugin.setLastUpdated(new Date(0L));
+                                plugins.add(plugin);
                             }
                         }
                     }
-                }catch (IOException e){
-                    e.printStackTrace();
                 }
-            }else{
-                //createNewPluginDat();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
+        } else {
+            //createNewPluginDat();
         }
-
-
-    static Plugin checkDownloadedVer(File file){
-        Plugin plugin = new Plugin();
-        plugin.setLatestFile(file);
-        plugin.setLatestVer();
-        return plugin;
-    }
-    /**
-     *
-     * @param name
-     * @param check
-     * @return a new Plugin Instance
-     */
-    protected static Plugin setLatestFile(String name, File check){
-        File latest = check;
-        Plugin plugin = new Plugin();
-        plugin.setLatestFile(check);
-        plugin.setName(name);
-        return plugin;
     }
 
-    private static UpdateCallback getUpdateCallBack(SpigetUpdater updater, Plugin p, boolean check){
+
+    private static UpdateCallback getUpdateCallBack(SpigetUpdater updater, Plugin p, boolean check) {
         return new UpdateCallback() {
             @Override
             public void updateAvailable(String latestVersion, String url, boolean hasDirectDownload) {
-                String name = StringUtils.rightPad(p.getName(),25, " ");
+                String name = StringUtils.rightPad(p.getName(), 25, " ");
                 List<String> out = new ArrayList<>();
                 out.add(name);
-                out.add(StringUtils.rightPad(p.getResourceID().toString(),13));
-                out.add(StringUtils.rightPad(p.getVersion(),10));
-                out.add(StringUtils.rightPad(latestVersion,10));
-                if ((hasDirectDownload || externalDownloads) && !check){
+                out.add(StringUtils.rightPad(p.getResourceID().toString(), 13));
+                out.add(StringUtils.rightPad(p.getVersion(), 10));
+                out.add(StringUtils.rightPad(latestVersion, 10));
+                if ((hasDirectDownload || externalDownloads) && !check) {
                     String result;
                     if (updater.downloadUpdate(p)) {
                         result = "DONE";
                     } else {
                         result = "FAIL";
                     }
-                    out.add(StringUtils.rightPad(result,10));
-                    out.add(StringUtils.rightPad(format.format(p.getLastUpdated()),15));
-                    if(result.equals("FAIL"))out.add(" REASON: " + updater.getFailReason() + " - URL: " + url);
-                }else{
-                    out.add(StringUtils.rightPad("NO",10));
-                    out.add(StringUtils.rightPad(format.format(p.getLastUpdated()),15));
-                    if(!check) {
+                    out.add(StringUtils.rightPad(result, 10));
+                    out.add(StringUtils.rightPad(format.format(p.getLastUpdated()), 15));
+                    if (result.equals("FAIL")) out.add(" REASON: " + updater.getFailReason() + " - URL: " + url);
+                } else {
+                    out.add(StringUtils.rightPad("NO", 10));
+                    out.add(StringUtils.rightPad(format.format(p.getLastUpdated()), 15));
+                    if (!check) {
                         out.add(" REASON: EXTERNAL -  URL: " + url);
                     }
                 }
                 StringBuilder sb = new StringBuilder();
                 String[] message = new String[out.size()];
                 out.toArray(message);
-                sb.append(StringUtils.join(message," | "));
+                sb.append(StringUtils.join(message, " | "));
                 System.out.println(sb.toString());
             }
 
             @Override
             public void upToDate() {
-                String name = StringUtils.rightPad(p.getName(),25, " ");
+                String name = StringUtils.rightPad(p.getName(), 25, " ");
                 List<String> out = new ArrayList<>();
                 out.add(name);
-                out.add(StringUtils.rightPad(p.getResourceID().toString(),13));
-                out.add(StringUtils.rightPad(p.getVersion(),10));
-                out.add(StringUtils.rightPad(p.getVersion(),10));
-                out.add(StringUtils.rightPad("YES",10));
-                out.add(StringUtils.rightPad(format.format(p.getLastUpdated()),15));
+                out.add(StringUtils.rightPad(p.getResourceID().toString(), 13));
+                out.add(StringUtils.rightPad(p.getVersion(), 10));
+                out.add(StringUtils.rightPad(p.getVersion(), 10));
+                out.add(StringUtils.rightPad("YES", 10));
+                out.add(StringUtils.rightPad(format.format(p.getLastUpdated()), 15));
                 StringBuilder sb = new StringBuilder();
                 String[] message = new String[out.size()];
                 out.toArray(message);
-                sb.append(StringUtils.join(message," | "));
+                sb.append(StringUtils.join(message, " | "));
                 System.out.println(sb.toString());
             }
-    };
+        };
     }
-    private static void doOutHeader(){
+
+    private static void doOutHeader() {
         List<String> out = new ArrayList<>();
-        String name = StringUtils.rightPad("Plugin Name",25, " ");
+        String name = StringUtils.rightPad("Plugin Name", 25, " ");
         out.add(name);
         out.add(" Resource ID ");
-        out.add(StringUtils.rightPad("Version",10));
-        out.add(StringUtils.rightPad("Latest",10));
-        out.add(StringUtils.rightPad("Up to Date",10));
+        out.add(StringUtils.rightPad("Version", 10));
+        out.add(StringUtils.rightPad("Latest", 10));
+        out.add(StringUtils.rightPad("Up to Date", 10));
         out.add("Date Updated");
         out.add("Extra Notes");
         StringBuilder sb = new StringBuilder();
         String[] message = new String[out.size()];
         out.toArray(message);
-        sb.append(StringUtils.join(message," | "));
+        sb.append(StringUtils.join(message, " | "));
         System.out.println(sb.toString());
-        System.out.println(StringUtils.rightPad("", sb.length(),"-"));
+        System.out.println(StringUtils.rightPad("", sb.length(), "-"));
     }
 
 }

@@ -25,6 +25,7 @@
 package au.com.addstar.objects;
 
 import au.com.addstar.SpigotUpdater;
+import org.apache.commons.io.FileUtils;
 
 import java.io.*;
 import java.util.Calendar;
@@ -46,6 +47,15 @@ public class Plugin {
     private String version;
     private String latestVersion;
     private String spigotVersion;
+    private String pdfVersion;
+    private Date lastUpdated;
+
+    public static Plugin checkDownloadedVer(File file) {
+        Plugin plugin = new Plugin();
+        plugin.setLatestFile(file);
+        plugin.setLatestVer();
+        return plugin;
+    }
 
     public String getPdfVersion() {
         return pdfVersion;
@@ -54,9 +64,6 @@ public class Plugin {
     private void setPdfVersion(String pdfVersion) {
         this.pdfVersion = pdfVersion;
     }
-
-    private String pdfVersion;
-    private Date lastUpdated;
 
     public String getSpigotVersion() {
         return spigotVersion;
@@ -114,37 +121,46 @@ public class Plugin {
         this.lastUpdated = lastUpdated;
     }
 
-    public Plugin setLatestVer(){
+    public Plugin setLatestVer() {
 
         try {
-            if(this.getLatestFile() ==  null) return this;
-            File file = this.getLatestFile();
-            JarFile jar = new JarFile(file);
-            JarEntry je = jar.getJarEntry("plugin.yml");
-            JarEntry sv = jar.getJarEntry("spigot.ver");
-            String spigotVer = null;
-            if(sv != null){
-                InputStream svstream = jar.getInputStream(sv);
-                InputStreamReader reader = new InputStreamReader(svstream);
-                BufferedReader bs = new BufferedReader(reader);
-                spigotVer = bs.readLine();
-                setSpigotVersion(spigotVer);
-                bs.close();
-                reader.close();
-                svstream.close();
+            if (latestFile == null) return this;
+            try(
+            JarFile jar = new JarFile(latestFile);
+            ) {
+                JarEntry je = jar.getJarEntry("plugin.yml");
+                JarEntry sv = jar.getJarEntry("spigot.ver");
+                if (sv != null) {
+                    try (
+                            InputStream svstream = jar.getInputStream(sv);
+                            InputStreamReader reader = new InputStreamReader(svstream);
+                            BufferedReader bs = new BufferedReader(reader);
+                    ) {
+                        spigotVersion = bs.readLine();
+                        bs.close();
+                        reader.close();
+                        svstream.close();
+                    }
+                }else{
+                    if(spigotVersion!=null)addSpigotVer(spigotVersion);
+                }
+                    try (
+                            InputStream stream = jar.getInputStream(je);
+                    ) {
+                        PluginDescriptionFile pdf = new PluginDescriptionFile(stream);
+                        pdfVersion = pdf.getVersion();
+                    }
+                }
+
+            if (spigotVersion != null && !spigotVersion.equals(pdfVersion)) {
+                version = spigotVersion;
+            } else {
+                version = pdfVersion;
             }
-            InputStream stream = jar.getInputStream(je);
-            PluginDescriptionFile pdf = new PluginDescriptionFile(stream);
-            stream.close();
-            setPdfVersion(pdf.getVersion());
-            if(spigotVer != null && !spigotVer.equals(pdf.getVersion())){
-                setVersion(spigotVer);}
-            else {
-                setVersion(pdf.getVersion());
-            }
-            setLastUpdated(new Date(file.lastModified()));
-        } catch (ZipException e){
-            //supress
+
+            lastUpdated = new Date(latestFile.lastModified());
+        } catch (ZipException e) {
+
         } catch (IOException | InvalidDescriptionException e) {
             System.out.println(e.getLocalizedMessage());
         }
@@ -153,36 +169,37 @@ public class Plugin {
 
     /**
      * Adds the Spigot.ver file to the jar
+     *
      * @param ver
      */
-    public void addSpigotVer(String ver){
-        setSpigotVersion(ver);
-        if(getLatestFile() == null) return;
-        File file = getLatestFile();
+    public void addSpigotVer(String ver) {
+        if (latestFile == null) return;
+        File newFile = new File(latestFile.getParentFile(),
+                SpigotUpdater.getFormat().format(Calendar.getInstance().getTime()) + "-" + ver + "-s.jar");
+        File spigotFile = new File(latestFile.getParentFile(), "spigot.ver");
+        if (spigotFile.exists()) FileUtils.deleteQuietly(spigotFile);
         try {
-            JarFile oldjar = new JarFile(file);
-            File newFile = new File(file.getParentFile(), SpigotUpdater.getFormat().format(Calendar.getInstance().getTime()) + "-"+ver+"-s.jar");
+            JarFile oldjar = new JarFile(latestFile);
             JarOutputStream tempJarOutputStream = new JarOutputStream(new FileOutputStream(newFile));
-            File spigotver = new File(file.getParentFile(),"spigot.ver");
-            if(spigotver.exists())spigotver.delete();
-            spigotver.createNewFile();
-            Writer wr = new FileWriter(spigotver);
-            BufferedWriter writer = new BufferedWriter(wr);
-            writer.write(ver);
-            writer.newLine();
-            writer.close();
-            wr.close();
-            try (FileInputStream stream = new FileInputStream(spigotver)) {
+            try(
+                    Writer wr = new FileWriter(spigotFile);
+                    BufferedWriter writer = new BufferedWriter(wr)
+            ) {
+                writer.write(ver);
+                writer.newLine();
+            }
+            try (FileInputStream stream = new FileInputStream(spigotFile)) {
                 byte[] buffer = new byte[1024];
                 int bytesRead = 0;
-                JarEntry je = new JarEntry(spigotver.getName());
+                JarEntry je = new JarEntry(spigotFile.getName());
                 tempJarOutputStream.putNextEntry(je);
                 while ((bytesRead = stream.read(buffer)) != -1) {
                     tempJarOutputStream.write(buffer, 0, bytesRead);
                 }
+                stream.close();
             }
             Enumeration jarEntries = oldjar.entries();
-            while(jarEntries.hasMoreElements()) {
+            while (jarEntries.hasMoreElements()) {
                 JarEntry entry = (JarEntry) jarEntries.nextElement();
                 InputStream entryInputStream = oldjar.getInputStream(entry);
                 tempJarOutputStream.putNextEntry(entry);
@@ -191,18 +208,20 @@ public class Plugin {
                 while ((bytesRead = entryInputStream.read(buffer)) != -1) {
                     tempJarOutputStream.write(buffer, 0, bytesRead);
                 }
+                entryInputStream.close();
             }
             tempJarOutputStream.close();
-            file.delete();
-            spigotver.delete();
-            newFile.renameTo(file);
-            setLatestFile(newFile);
-        }catch (ZipException e){
+            oldjar.close();
+            FileUtils.deleteQuietly(latestFile);
+            FileUtils.deleteQuietly(spigotFile);
+            FileUtils.moveFile(newFile,latestFile);
+            latestFile = newFile;
 
-        }catch (IOException e){
-
+        } catch (ZipException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
     }
 
     public void setLatestFile() {
@@ -220,7 +239,7 @@ public class Plugin {
                         latest = file;
                     }
                 }
-                if (latest != null)setLatestFile(latest);
+                if (latest != null) setLatestFile(latest);
             }
         }
     }

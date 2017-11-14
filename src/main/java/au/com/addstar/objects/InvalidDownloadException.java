@@ -24,26 +24,20 @@
 
 package au.com.addstar.objects;
 
-import java.util.Set;
-
+import java.io.Serializable;
 
 /**
- * Represents a concept that a plugin is aware of.
- * <p>
- * The internal representation may be singleton, or be a parameterized
- * instance, but must be immutable.
+ * Created for use for the Add5tar MC Minecraft server
+ * Created by benjamincharlton on 14/11/2017.
  */
-public interface PluginAwareness {
-    /**
-     * Each entry here represents a particular plugin's awareness. These can
-     * be checked by using {@link PluginDescriptionFile#getAwareness()}.{@link
-     * Set#contains(Object) contains(flag)}.
-     */
-    enum Flags implements PluginAwareness {
-        /**
-         * This specifies that all (text) resources stored in a plugin's jar
-         * use UTF-8 encoding.
-         */
-        UTF8,;
+public class InvalidDownloadException extends Exception {
+    private static final long serialVersionUID = 1737936208848013494L;
+
+    public InvalidDownloadException(String message) {
+        super(message);
+    }
+
+    public InvalidDownloadException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

@@ -52,6 +52,8 @@ package au.com.addstar;
  *  either expressed or implied, of anybody else.
  */
 
+import au.com.addstar.objects.ResourceInfo;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -59,8 +61,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
-import org.inventivetalent.update.spiget.ResourceInfo;
-import org.inventivetalent.update.spiget.download.DownloadCallback;
+
 
 class UpdateDownloader {
     private static final String RESOURCE_DOWNLOAD = "http://api.spiget.org/v2/resources/%s/download";
@@ -72,7 +73,7 @@ class UpdateDownloader {
         return new Runnable() {
             public void run() {
                 try {
-                    org.inventivetalent.update.spiget.download.UpdateDownloader.download(info, file, userAgent);
+                    UpdateDownloader.download(info, file, userAgent);
                     callback.finished();
                 } catch (Exception e) {
                     callback.error(e);
@@ -92,7 +93,7 @@ class UpdateDownloader {
         } else {
             ReadableByteChannel channel;
             try {
-                HttpURLConnection connection = (HttpURLConnection)(new URL(String.format(RESOURCE_DOWNLOAD, info.id))).openConnection();
+                HttpURLConnection connection = (HttpURLConnection) (new URL(String.format(RESOURCE_DOWNLOAD, info.id))).openConnection();
                 connection.setRequestProperty("User-Agent", userAgent);
                 if (connection.getResponseCode() != 200) {
                     throw new RuntimeException("Download returned status #" + connection.getResponseCode());
