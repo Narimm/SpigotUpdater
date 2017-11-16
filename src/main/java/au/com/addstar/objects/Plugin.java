@@ -50,6 +50,26 @@ public class Plugin {
     private String pdfVersion;
     private Date lastUpdated;
 
+    public String getUrl() {
+        return url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
+    private String url;
+
+    public PluginType getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = PluginType.valueOf(type);
+    }
+
+    private PluginType type;
+
     public static Plugin checkDownloadedVer(File file) {
         Plugin plugin = new Plugin();
         plugin.setLatestFile(file);
@@ -128,7 +148,21 @@ public class Plugin {
             try(
             JarFile jar = new JarFile(latestFile);
             ) {
-                JarEntry je = jar.getJarEntry("plugin.yml");
+                String descriptorFileName = "plugin.yml";
+                if(type != null) {
+                    switch (type) {
+                        case BUKKIT:
+                            descriptorFileName = "plugin.yml";
+                            break;
+                        case BUNGEE:
+                            descriptorFileName = "bungee.yml";
+                            break;
+                        default:
+                            descriptorFileName = "plugin.yml";
+                    }
+                }
+                JarEntry je = jar.getJarEntry(descriptorFileName);
+                if(je == null)je = jar.getJarEntry("plugin.yml");
                 JarEntry sv = jar.getJarEntry("spigot.ver");
                 if (sv != null) {
                     try (
@@ -180,6 +214,7 @@ public class Plugin {
         if (spigotFile.exists()) FileUtils.deleteQuietly(spigotFile);
         try {
             JarFile oldjar = new JarFile(latestFile);
+            if(oldjar.getEntry("spigot.ver") != null)return;
             JarOutputStream tempJarOutputStream = new JarOutputStream(new FileOutputStream(newFile));
             try(
                     Writer wr = new FileWriter(spigotFile);
@@ -242,5 +277,9 @@ public class Plugin {
                 if (latest != null) setLatestFile(latest);
             }
         }
+    }
+    private enum PluginType {
+        BUKKIT,
+        BUNGEE
     }
 }

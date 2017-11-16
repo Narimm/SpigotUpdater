@@ -42,6 +42,8 @@ import com.gargoylesoftware.htmlunit.util.Cookie;
 import org.apache.commons.io.FileUtils;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -52,12 +54,13 @@ public class SpigotDirectDownloader {
     private final WebClient webClient;
     private final SpigotSiteAPI api;
     private User spigotUser;
+    private List<Integer> owned = new ArrayList<>();
 
     public SpigotDirectDownloader(Configuration config) {
         api = new SpigotSiteCore();
         this.webClient = new WebClient(BrowserVersion.CHROME);
         webClient.getOptions().setJavaScriptEnabled(true);
-        webClient.getOptions().setTimeout(15000);
+        webClient.getOptions().setTimeout(30000);
         webClient.getOptions().setCssEnabled(false);
         webClient.getOptions().setRedirectEnabled(true);
         webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
@@ -73,6 +76,14 @@ public class SpigotDirectDownloader {
             Map<String, String> cookies = ((SpigotUser) spigotUser).getCookies();
             for (Map.Entry<String, String> entry : cookies.entrySet())
                 webClient.getCookieManager().addCookie(new Cookie("spigotmc.org", entry.getKey(), entry.getValue()));
+            try {
+                for(Resource purchase:spigotUser.getPurchasedResources()){
+                    owned.add(purchase.getResourceId());
+                }
+            } catch (ConnectionFailedException e) {
+                System.out.println("ConnectionFailed: Purchased resources may not be available.");
+            }
+
         }
     }
     public boolean downloadUpdate(ResourceInfo info, File file) throws InvalidDownloadException, ConnectionFailedException {
@@ -82,7 +93,7 @@ public class SpigotDirectDownloader {
         try {
             webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
             Resource resource = api.getResourceManager().getResourceById(info.id,spigotUser);
-            if(info.premium && !spigotUser.getPurchasedResources().contains(resource)){
+            if(info.premium && !owned.contains(resource.getResourceId())){
                 return false;
             }
             Page page = webClient.getPage(resource.getDownloadURL());
@@ -104,7 +115,7 @@ public class SpigotDirectDownloader {
         Plugin plugin = Plugin.checkDownloadedVer(file);
         if (plugin == null || plugin.getVersion() == null) {
             FileUtils.deleteQuietly(file);
-            if(timeOut<=15000L && info.external){
+            if(timeOut<15000L && info.external){
                 downloadUpdate(info,file,timeOut+5000L);
             }
             throw new InvalidDownloadException("File did not contain a plugin.yml");

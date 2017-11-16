@@ -88,15 +88,18 @@ public class SpigotUpdater {
                 String l;
                 while ((l = b.readLine()) != null) {
                     if (!l.startsWith("#")) {
-                        String[] lineArray = StringUtils.split(l, ",");
+                        String[] lineArray = StringUtils.splitPreserveAllTokens(l, ",");
                         if (lineArray.length != 0) {
                             String pluginName = lineArray[0];
                             String type = lineArray[1];
                             String source = lineArray[2];
+                            String url = lineArray[3];
                             if (source.equals("SPIGOT")) {
-                                String resourceID = lineArray[3];
+                                String resourceID = lineArray[4];
                                 Plugin plugin = new Plugin();
                                 plugin.setName(pluginName);
+                                plugin.setType(type);
+                                plugin.setUrl(url);
                                 plugin.setResourceID(Integer.parseInt(resourceID));
                                 plugin.setLatestFile();
                                 plugin.setLatestVer();
