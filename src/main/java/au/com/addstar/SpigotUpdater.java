@@ -106,6 +106,7 @@ public class SpigotUpdater {
                                 if (plugin.getVersion() == null) plugin.setVersion("");
                                 if (plugin.getLastUpdated() == null) plugin.setLastUpdated(new Date(0L));
                                 plugins.add(plugin);
+                                plugins.sort(getComparator());
                             }
                         }
                     }
@@ -117,7 +118,9 @@ public class SpigotUpdater {
             //createNewPluginDat();
         }
     }
-
+    private static Comparator<Plugin> getComparator(){
+        return Comparator.comparing(Plugin::getName);
+    }
 
     private static UpdateCallback getUpdateCallBack(SpigetUpdater updater, Plugin p, boolean check) {
         return new UpdateCallback() {

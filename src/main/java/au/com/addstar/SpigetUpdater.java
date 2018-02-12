@@ -93,9 +93,11 @@ public class SpigetUpdater extends SpigetUpdateAbstract {
                 latestResourceInfo = new Gson().fromJson(jsonObject, ResourceInfo.class);
                 if (!latestResourceInfo.premium) {
                     try {
-                        connection = (HttpURLConnection) new URL(String.format(RESOURCE_VERSION, resourceId, System.currentTimeMillis())).openConnection();
+                        URL url = new URL(String.format(RESOURCE_VERSION, resourceId));
+                        connection = (HttpURLConnection) url.openConnection();
                         connection.setRequestProperty("User-Agent", getUserAgent());
-                        JsonElement elem = new JsonParser().parse(new InputStreamReader(connection.getInputStream()));
+                        InputStreamReader reader = new InputStreamReader(connection.getInputStream());
+                        JsonElement elem = new JsonParser().parse(reader);
                         JsonObject json = elem.getAsJsonArray().get(0).getAsJsonObject();
                         latestResourceInfo.latestVersion = new Gson().fromJson(json, ResourceVersion.class);
                     } catch (Exception e) {

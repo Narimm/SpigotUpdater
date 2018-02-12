@@ -24,6 +24,7 @@
 
 package au.com.addstar.objects;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
 /**
@@ -36,6 +37,14 @@ public abstract class VersionComparator {
         public boolean isNewer(String var1, String var2) {
             DefaultArtifactVersion current = new DefaultArtifactVersion(var1);
             DefaultArtifactVersion check = new DefaultArtifactVersion(var2);
+            if(check.getMajorVersion() == 0){
+                if(current.getMajorVersion() != 0){
+                    if(var2.startsWith("v")){
+                        var2 = var2.substring(1);
+                    }
+                    check = new DefaultArtifactVersion(var2);
+                }
+            }
             if (current.getMajorVersion() + current.getMinorVersion() + current.getIncrementalVersion() == 0) {
                 //not maven compat fallback
                 return !var1.equals(var2);
