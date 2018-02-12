@@ -68,7 +68,7 @@ import java.util.logging.Logger;
 public abstract class SpigetUpdateAbstract {
 
     public static final String RESOURCE_INFO = "http://api.spiget.org/v2/resources/%s?ut=%s";
-    public static final String RESOURCE_VERSION = "http://api.spiget.org/v2/resources/%s/versions/latest?ut=%s";
+    public static final String RESOURCE_VERSION = "http://api.spiget.org/v2/resources/%s/versions?size=1";
 
     protected final int resourceId;
     protected final String currentVersion;
@@ -118,7 +118,7 @@ public abstract class SpigetUpdateAbstract {
                     JsonObject jsonObject = new JsonParser().parse(new InputStreamReader(connection.getInputStream())).getAsJsonObject();
                     latestResourceInfo = new Gson().fromJson(jsonObject, ResourceInfo.class);
 
-                    connection = (HttpURLConnection) new URL(String.format(RESOURCE_VERSION, resourceId, System.currentTimeMillis())).openConnection();
+                    connection = (HttpURLConnection) new URL(String.format(RESOURCE_VERSION, resourceId)).openConnection();
                     connection.setRequestProperty("User-Agent", getUserAgent());
                     jsonObject = new JsonParser().parse(new InputStreamReader(connection.getInputStream())).getAsJsonObject();
                     latestResourceInfo.latestVersion = new Gson().fromJson(jsonObject, ResourceVersion.class);

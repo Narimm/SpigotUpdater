@@ -27,6 +27,7 @@ package au.com.addstar;
 import au.com.addstar.objects.*;
 import be.maximvdw.spigotsite.api.exceptions.ConnectionFailedException;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.commons.io.FileUtils;
@@ -94,7 +95,8 @@ public class SpigetUpdater extends SpigetUpdateAbstract {
                     try {
                         connection = (HttpURLConnection) new URL(String.format(RESOURCE_VERSION, resourceId, System.currentTimeMillis())).openConnection();
                         connection.setRequestProperty("User-Agent", getUserAgent());
-                        JsonObject json = new JsonParser().parse(new InputStreamReader(connection.getInputStream())).getAsJsonObject();
+                        JsonElement elem = new JsonParser().parse(new InputStreamReader(connection.getInputStream()));
+                        JsonObject json = elem.getAsJsonArray().get(0).getAsJsonObject();
                         latestResourceInfo.latestVersion = new Gson().fromJson(json, ResourceVersion.class);
                     } catch (Exception e) {
                         log.log(Level.WARNING, "Failed to get version info from spiget.org", e);
