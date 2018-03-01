@@ -55,8 +55,12 @@ public class SpigotUpdater {
 
     public static void main(String[] args) {
         Configuration config = new Configuration();
-        final boolean check = (args.length == 1 && args[0].equals("check"));
-        if (check) System.out.println(" ONLY CHECKING NO DOWNLOADS WILL BE PERFORMED.");
+        final boolean check = (args.length >= 1 && args[0].equals("--check"));
+        if (check){
+            System.out.println(" ONLY CHECKING NO DOWNLOADS WILL BE PERFORMED.");
+        }else{
+            System.out.println(" Preparing Plugins .... ");
+        }
         downloadDir = config.downloadDir;
         if (!downloadDir.exists()) {
             downloadDir.mkdir();
@@ -65,20 +69,18 @@ public class SpigotUpdater {
         externalDownloads = config.externalDownloads;
         loadPlugins();
         spigotDownloader = new SpigotDirectDownloader(config);
-        int i = 0;
-        doOutHeader();
+        doOutHeader(plugins);
         for (final Plugin p : plugins) {
             SpigetUpdater updater = new SpigetUpdater(p.getVersion(), Logger.getAnonymousLogger(), p.getResourceID(), config);
             updater.setExternal(externalDownloads);
             updater.checkForUpdate(getUpdateCallBack(updater, p, check));
-            i++;
         }
         /*try {
             savePlugins();
         }catch (IOException e){
             e.printStackTrace();
         }*/
-        System.out.println("Processed:  " + i + " plugins");
+        System.out.println("Processed:  " + plugins.size() + " plugins");
     }
 
     private static void loadPlugins() {
@@ -114,8 +116,6 @@ public class SpigotUpdater {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        } else {
-            //createNewPluginDat();
         }
     }
     private static Comparator<Plugin> getComparator(){
@@ -175,8 +175,9 @@ public class SpigotUpdater {
         };
     }
 
-    private static void doOutHeader() {
+    private static void doOutHeader(List<Plugin> plugins) {
         List<String> out = new ArrayList<>();
+        System.out.println("Processing " + plugins.size() + " plugins.... ");
         String name = StringUtils.rightPad("Plugin Name", 25, " ");
         out.add(name);
         out.add(" Resource ID ");

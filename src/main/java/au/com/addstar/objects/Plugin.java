@@ -183,6 +183,9 @@ public class Plugin {
                     ) {
                         PluginDescriptionFile pdf = new PluginDescriptionFile(stream);
                         pdfVersion = pdf.getVersion();
+                    }catch (NullPointerException e){
+                        System.out.println("Plugin: "+ this.getName() + " File: " + jar.getName() + " does not appear to be a valid plugin (" + latestFile.getAbsolutePath()+")");
+                        pdfVersion = null;
                     }
                 }
 
