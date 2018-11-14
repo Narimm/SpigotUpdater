@@ -38,14 +38,17 @@ import java.util.logging.Logger;
  * Created by Narimm on 23/02/2017.
  */
 public class SpigotUpdater {
-
+    private static Logger log = Logger.getLogger("SpigotDownloader");
     private static final List<Plugin> plugins = new ArrayList<>();
     private static final SimpleDateFormat format = new SimpleDateFormat("yyyyMMdd");
     public static File downloadDir;
     private static File datFile;
     private static Boolean externalDownloads;
     private static SpigotDirectDownloader spigotDownloader;
-
+    static{
+    
+    }
+    
     public static SpigotDirectDownloader getSpigotDownloader() {
         return spigotDownloader;
     }
@@ -96,6 +99,8 @@ public class SpigotUpdater {
 
     private static void loadPlugins(List<String> search) {
         if (datFile.exists()) {
+            long start = System.currentTimeMillis();
+    
             try {
                 BufferedReader b = new BufferedReader(new FileReader(datFile));
                 String l;
@@ -135,6 +140,8 @@ public class SpigotUpdater {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            long total = System.currentTimeMillis()-start;
+            
         }
     }
     private static Comparator<Plugin> getComparator(){
@@ -146,38 +153,54 @@ public class SpigotUpdater {
             @Override
             public void updateAvailable(ResourceInfo latestResource, String url, boolean hasDirectDownload) {
                 String name = StringUtils.rightPad(p.getName(), 25, " ");
+                Console.Color resouceColor = null;
+                if(latestResource.premium){
+                    resouceColor = Console.Color.ANSI_YELLOW;
+                }
                 List<String> out = new ArrayList<>();
-                out.add(name);
+                out.add(Console.wrap(name,resouceColor));
                 out.add(StringUtils.rightPad(p.getResourceID().toString(), 7));
                 out.add(StringUtils.rightPad(p.getVersion(), 10));
                 out.add(StringUtils.truncate(StringUtils.rightPad(latestResource.latestVersion.name, 10),10));
                 if ((hasDirectDownload || externalDownloads) && !check) {
                     String result;
+                    Console.Color color;
                     if (updater.downloadUpdate(p)) {
                         result = "DONE";
+                        color = Console.Color.ANSI_GREEN;
                     } else {
                         result = "FAIL";
+                        color = Console.Color.ANSI_RED;
+    
                     }
-                    out.add(StringUtils.rightPad(result, 7));
+                    out.add(Console.wrap(StringUtils.rightPad(result, 7), color));
                     out.add(StringUtils.rightPad(format.format(p.getLastUpdated()), 10));
                     if (result.equals("FAIL")) out.add(" REASON: " + updater.getFailReason() + " - URL: " + url);
                 } else {
-                    out.add(StringUtils.rightPad("NO", 7));
-                    out.add(StringUtils.rightPad(format.format(p.getLastUpdated()), 10));
-                    if (!check) {
-                        out.add(" REASON: EXTERNAL -  URL: " + url);
-                    }else{
-                        out.add(" URL: " +url);
+                    out.add(Console.wrapPad("NO",  Console.Color.ANSI_RED,7));
+                    Console.Color dateColor = null;
+                    Date lastUpdate = p.getLastUpdated();
+                    long diff = new Date().getTime()-lastUpdate.getTime();
+                    if(diff>0){
+                        diff = diff /(60 * 60 * 1000);
+                        dateColor= Console.Color.ANSI_BLACK_RED;
+                        if(diff<24)dateColor = Console.Color.ANSI_GREEN;
+                        if(diff<72)dateColor = Console.Color.ANSI_YELLOW;
+                        if(diff<144)dateColor = Console.Color.ANSI_RED;
                     }
+                    
+                    out.add(Console.wrapPad(format.format(p.getLastUpdated()), dateColor,10));
+                    out.add(" URL: " + url);
                 }
                 StringBuilder sb = new StringBuilder();
                 String[] message = new String[out.size()];
                 out.toArray(message);
-                sb.append(StringUtils.join(message, " | "));
+                sb.append(StringUtils.join(message, " | " +Console.Color.ANSI_RESET));
                 System.out.println(sb.toString());
             }
 
             @Override
+            
             public void upToDate() {
                 String name = StringUtils.rightPad(p.getName(), 25, " ");
                 List<String> out = new ArrayList<>();
@@ -185,7 +208,7 @@ public class SpigotUpdater {
                 out.add(StringUtils.rightPad(p.getResourceID().toString(), 7));
                 out.add(StringUtils.rightPad(p.getVersion(), 10));
                 out.add(StringUtils.rightPad(p.getVersion(), 10));
-                out.add(StringUtils.rightPad("YES", 7));
+                out.add(Console.wrap(StringUtils.rightPad("YES", 7), Console.Color.ANSI_GREEN));
                 out.add(StringUtils.rightPad(format.format(p.getLastUpdated()), 10));
                 StringBuilder sb = new StringBuilder();
                 String[] message = new String[out.size()];

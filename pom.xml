@@ -38,13 +38,13 @@
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
-            <version>1.18</version>
+            <version>1.23</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-artifact</artifactId>
-            <version>3.2.5</version>
+            <version>3.6.0</version>
         </dependency>
     </dependencies>
     <repositories>
