@@ -91,33 +91,45 @@ public class SpigetUpdater extends SpigetUpdateAbstract {
                 connection.setRequestProperty("User-Agent", getUserAgent());
                 JsonObject jsonObject = new JsonParser().parse(new InputStreamReader(connection.getInputStream())).getAsJsonObject();
                 latestResourceInfo = new Gson().fromJson(jsonObject, ResourceInfo.class);
-                if (!latestResourceInfo.premium) {
-                    try {
-                        URL url = new URL(String.format(RESOURCE_VERSION, resourceId));
-                        connection = (HttpURLConnection) url.openConnection();
-                        connection.setRequestProperty("User-Agent", getUserAgent());
-                        InputStreamReader reader = new InputStreamReader(connection.getInputStream());
-                        JsonElement elem = new JsonParser().parse(reader);
-                        JsonObject json = elem.getAsJsonArray().get(0).getAsJsonObject();
-                        latestResourceInfo.latestVersion = new Gson().fromJson(json, ResourceVersion.class);
-                    } catch (Exception e) {
-                        log.log(Level.WARNING, "Failed to get version info from spiget.org", e);
-                    }
-                    if (isVersionNewer(currentVersion, latestResourceInfo.latestVersion.name)) {
-                        callback.updateAvailable(latestResourceInfo.latestVersion.name, "https://spigotmc.org/" + latestResourceInfo.file.url, !latestResourceInfo.external);
-                    } else {
-                        callback.upToDate();
-                    }
-                } else {
-                    latestVer = Utilities.readURL("https://api.spigotmc.org/legacy/update.php?resource=" + resourceId);
-                    if (isVersionNewer(currentVersion, latestVer)) {
-                        callback.updateAvailable(latestVer, "https://spigotmc.org/" + latestResourceInfo.file.url, !latestResourceInfo.external);
-                    } else {
-                        callback.upToDate();
-                    }
-                }
             } catch (Exception e) {
                 log.log(Level.WARNING, "Failed to get resource info from spiget.org:" + resourceId);
+                latestResourceInfo = new ResourceInfo();
+                latestResourceInfo.latestVersion = new ResourceVersion();
+                latestResourceInfo.latestVersion.name = "MISSING";
+                latestResourceInfo.external = false;
+                latestResourceInfo.premium = true;
+                latestResourceInfo.id = resourceId;
+                //callback.updateAvailable(info,"UNAVAILABLE", false);
+            }
+            if (!latestResourceInfo.premium) {
+                try {
+                    URL url = new URL(String.format(RESOURCE_VERSION, resourceId));
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestProperty("User-Agent", getUserAgent());
+                    InputStreamReader reader = new InputStreamReader(connection.getInputStream());
+                    JsonElement elem = new JsonParser().parse(reader);
+                    JsonObject json = elem.getAsJsonArray().get(0).getAsJsonObject();
+                    latestResourceInfo.latestVersion = new Gson().fromJson(json, ResourceVersion.class);
+                } catch (Exception e) {
+                    log.log(Level.WARNING, "Failed to get version info from spiget.org", e);
+                }
+                if (isVersionNewer(currentVersion, latestResourceInfo.latestVersion.name)) {
+                    callback.updateAvailable(latestResourceInfo, "https://spigotmc.org/" + latestResourceInfo.file.url, !latestResourceInfo.external);
+                } else {
+                    callback.upToDate();
+                }
+            } else {
+                latestVer = Utilities.readURL("https://api.spigotmc.org/legacy/update.php?resource=" + resourceId);
+                if (isVersionNewer(currentVersion, latestVer)) {
+                    if(latestResourceInfo.latestVersion == null){
+                        latestResourceInfo.latestVersion = new ResourceVersion();
+                    }
+                    latestResourceInfo.latestVersion.name = latestVer;
+                    latestResourceInfo.latestVersion.id = resourceId;
+                    callback.updateAvailable(latestResourceInfo, "https://spigotmc.org/" + latestResourceInfo.file.url, !latestResourceInfo.external);
+                } else {
+                    callback.upToDate();
+                }
             }
         });
     }
@@ -139,7 +151,7 @@ public class SpigetUpdater extends SpigetUpdateAbstract {
             failReason = DownloadFailReason.NO_UPDATE;
             return false;// Version is no update
         }
-
+        
         if (latestResourceInfo.external && !external) {
             failReason = DownloadFailReason.EXTERNAL_DISALLOWED;
             return false;// No download available

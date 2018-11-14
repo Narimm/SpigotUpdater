@@ -16,17 +16,17 @@
         <dependency>
             <groupId>be.maximvdw</groupId>
             <artifactId>spigotsite</artifactId>
-            <version>0.1.2-SNAPSHOT</version>
+            <version>0.3.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
-            <version>2.4</version>
+            <version>2.8.5</version>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>23.0</version>
+            <version>25.0-jre</version>
         </dependency>
         <!-- HTML Unit -->
         <dependency>
@@ -92,6 +92,16 @@
                     <source>1.8</source>
             </configuration>
 
+        </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <version>3.1.1</version>
+        </plugin>
+        <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>versions-maven-plugin</artifactId>
+            <version>2.7</version>
         </plugin>
     </plugins>
 </build>

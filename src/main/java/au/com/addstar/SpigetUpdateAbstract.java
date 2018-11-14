@@ -125,7 +125,7 @@ public abstract class SpigetUpdateAbstract {
                     latestResourceInfo.latestVersion = new Gson().fromJson(jsonObject, ResourceVersion.class);
 
                     if (isVersionNewer(currentVersion, latestResourceInfo.latestVersion.name)) {
-                        callback.updateAvailable(latestResourceInfo.latestVersion.name, "https://spigotmc.org/" + latestResourceInfo.file.url, !latestResourceInfo.external);
+                        callback.updateAvailable(latestResourceInfo, "https://spigotmc.org/" + latestResourceInfo.file.url, !latestResourceInfo.external);
                     } else {
                         callback.upToDate();
                     }

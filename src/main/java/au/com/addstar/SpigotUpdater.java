@@ -25,6 +25,7 @@
 package au.com.addstar;
 
 import au.com.addstar.objects.Plugin;
+import au.com.addstar.objects.ResourceInfo;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
@@ -55,7 +56,7 @@ public class SpigotUpdater {
 
     public static void main(String[] args) {
         Configuration config = new Configuration();
-        final boolean check = (args.length >= 1 && args[0].equals("--check"));
+        final boolean check = !(args.length >= 1 && args[0].equals("--check"));
         if (check){
             System.out.println(" ONLY CHECKING NO DOWNLOADS WILL BE PERFORMED.");
         }else{
@@ -65,9 +66,19 @@ public class SpigotUpdater {
         if (!downloadDir.exists()) {
             downloadDir.mkdir();
         }
+        List<String> search =  new ArrayList<>();
+        if(args.length > 1){
+            int i=0;
+            for(String arg: args){
+                if(i > 0){
+                    search.add(arg);
+                }
+                i++;
+            }
+        }
         datFile = new File(downloadDir, "plugins.dat");
         externalDownloads = config.externalDownloads;
-        loadPlugins();
+        loadPlugins(search);
         spigotDownloader = new SpigotDirectDownloader(config);
         doOutHeader(plugins);
         for (final Plugin p : plugins) {
@@ -83,7 +94,7 @@ public class SpigotUpdater {
         System.out.println("Processed:  " + plugins.size() + " plugins");
     }
 
-    private static void loadPlugins() {
+    private static void loadPlugins(List<String> search) {
         if (datFile.exists()) {
             try {
                 BufferedReader b = new BufferedReader(new FileReader(datFile));
@@ -107,7 +118,15 @@ public class SpigotUpdater {
                                 plugin.setLatestVer();
                                 if (plugin.getVersion() == null) plugin.setVersion("");
                                 if (plugin.getLastUpdated() == null) plugin.setLastUpdated(new Date(0L));
-                                plugins.add(plugin);
+                                if(search.size() > 0) {
+                                    for (String needle : search) {
+                                        if (pluginName.startsWith(needle)) {
+                                            plugins.add(plugin);
+                                        }
+                                    }
+                                }else {
+                                    plugins.add(plugin);
+                                }
                                 plugins.sort(getComparator());
                             }
                         }
@@ -125,13 +144,13 @@ public class SpigotUpdater {
     private static UpdateCallback getUpdateCallBack(SpigetUpdater updater, Plugin p, boolean check) {
         return new UpdateCallback() {
             @Override
-            public void updateAvailable(String latestVersion, String url, boolean hasDirectDownload) {
+            public void updateAvailable(ResourceInfo latestResource, String url, boolean hasDirectDownload) {
                 String name = StringUtils.rightPad(p.getName(), 25, " ");
                 List<String> out = new ArrayList<>();
                 out.add(name);
-                out.add(StringUtils.rightPad(p.getResourceID().toString(), 13));
+                out.add(StringUtils.rightPad(p.getResourceID().toString(), 7));
                 out.add(StringUtils.rightPad(p.getVersion(), 10));
-                out.add(StringUtils.rightPad(latestVersion, 10));
+                out.add(StringUtils.truncate(StringUtils.rightPad(latestResource.latestVersion.name, 10),10));
                 if ((hasDirectDownload || externalDownloads) && !check) {
                     String result;
                     if (updater.downloadUpdate(p)) {
@@ -139,14 +158,16 @@ public class SpigotUpdater {
                     } else {
                         result = "FAIL";
                     }
-                    out.add(StringUtils.rightPad(result, 10));
-                    out.add(StringUtils.rightPad(format.format(p.getLastUpdated()), 15));
+                    out.add(StringUtils.rightPad(result, 7));
+                    out.add(StringUtils.rightPad(format.format(p.getLastUpdated()), 10));
                     if (result.equals("FAIL")) out.add(" REASON: " + updater.getFailReason() + " - URL: " + url);
                 } else {
-                    out.add(StringUtils.rightPad("NO", 10));
-                    out.add(StringUtils.rightPad(format.format(p.getLastUpdated()), 15));
+                    out.add(StringUtils.rightPad("NO", 7));
+                    out.add(StringUtils.rightPad(format.format(p.getLastUpdated()), 10));
                     if (!check) {
                         out.add(" REASON: EXTERNAL -  URL: " + url);
+                    }else{
+                        out.add(" URL: " +url);
                     }
                 }
                 StringBuilder sb = new StringBuilder();
@@ -161,11 +182,11 @@ public class SpigotUpdater {
                 String name = StringUtils.rightPad(p.getName(), 25, " ");
                 List<String> out = new ArrayList<>();
                 out.add(name);
-                out.add(StringUtils.rightPad(p.getResourceID().toString(), 13));
+                out.add(StringUtils.rightPad(p.getResourceID().toString(), 7));
                 out.add(StringUtils.rightPad(p.getVersion(), 10));
                 out.add(StringUtils.rightPad(p.getVersion(), 10));
-                out.add(StringUtils.rightPad("YES", 10));
-                out.add(StringUtils.rightPad(format.format(p.getLastUpdated()), 15));
+                out.add(StringUtils.rightPad("YES", 7));
+                out.add(StringUtils.rightPad(format.format(p.getLastUpdated()), 10));
                 StringBuilder sb = new StringBuilder();
                 String[] message = new String[out.size()];
                 out.toArray(message);
@@ -180,11 +201,11 @@ public class SpigotUpdater {
         System.out.println("Processing " + plugins.size() + " plugins.... ");
         String name = StringUtils.rightPad("Plugin Name", 25, " ");
         out.add(name);
-        out.add(" Resource ID ");
+        out.add(StringUtils.rightPad("Res. ID", 7));
         out.add(StringUtils.rightPad("Version", 10));
         out.add(StringUtils.rightPad("Latest", 10));
-        out.add(StringUtils.rightPad("Up to Date", 10));
-        out.add("Date Updated");
+        out.add(StringUtils.rightPad("Update?", 7));
+        out.add(StringUtils.rightPad("Date Upd.", 10));
         out.add("Extra Notes");
         StringBuilder sb = new StringBuilder();
         String[] message = new String[out.size()];

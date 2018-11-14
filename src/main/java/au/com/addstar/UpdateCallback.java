@@ -24,6 +24,8 @@
 
 package au.com.addstar;
 
+import au.com.addstar.objects.ResourceInfo;
+
 /**
  * Created for use for the Add5tar MC Minecraft server
  * Created by benjamincharlton on 14/11/2017.
@@ -35,11 +37,11 @@ public interface UpdateCallback {
      * <p>
      * Use {@link SpigetUpdateAbstract#getLatestResourceInfo()} to get all resource details
      *
-     * @param newVersion      the new version's name
+     * @param latestResource      the new version's name
      * @param downloadUrl     URL to download the update
      * @param canAutoDownload whether this update can be downloaded automatically
      */
-    void updateAvailable(String newVersion, String downloadUrl, boolean canAutoDownload);
+    void updateAvailable(ResourceInfo latestResource, String downloadUrl, boolean canAutoDownload);
 
     /**
      * Called when no update was found

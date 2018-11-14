@@ -61,6 +61,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.util.Calendar;
+
+import static au.com.addstar.SpigotUpdater.getSpigotDownloader;
 
 
 class UpdateDownloader {
@@ -87,7 +90,7 @@ class UpdateDownloader {
         download(info, file, "SPIGOTUPDATER-JAVA");
     }
 
-    public static void download(ResourceInfo info, File file, String userAgent) {
+    public static void download(ResourceInfo info, File file, String userAgent) throws RuntimeException {
         if (info.external) {
             throw new IllegalArgumentException("Cannot download external resource #" + info.id);
         } else {
@@ -96,12 +99,18 @@ class UpdateDownloader {
                 HttpURLConnection connection = (HttpURLConnection) (new URL(String.format(RESOURCE_DOWNLOAD, info.id))).openConnection();
                 connection.setRequestProperty("User-Agent", userAgent);
                 if (connection.getResponseCode() != 200) {
-                    throw new RuntimeException("Download returned status #" + connection.getResponseCode());
+                    channel = null;
+                try {
+                    boolean success = getSpigotDownloader().downloadUpdate(info, file);
+                    if(success)return;
+                }catch (Exception e){
+                    throw new RuntimeException("Download returned status #" + connection.getResponseCode() + " attempted spigot dirrect .",e);
                 }
-
-                channel = Channels.newChannel(connection.getInputStream());
+                }else {
+                    channel = Channels.newChannel(connection.getInputStream());
+                }
             } catch (IOException e) {
-                throw new RuntimeException("Download failed", e);
+                throw new RuntimeException("Download failed: ", e);
             }
 
             try {
